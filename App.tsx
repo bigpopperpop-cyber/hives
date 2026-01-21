@@ -63,8 +63,10 @@ const App: React.FC = () => {
     window.print();
   };
 
+  const paypalUrl = "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=gizmooo@yahoo.com&currency_code=USD&source=url";
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50 no-print">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -135,7 +137,7 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 pb-24 no-print">
+      <main className="flex-grow max-w-6xl mx-auto px-4 py-8 pb-24 no-print w-full">
         {activeTab === 'log' && (
           <div className="max-w-2xl mx-auto">
             <HiveForm onAdd={addEntry} />
@@ -266,6 +268,30 @@ const App: React.FC = () => {
           <SyncPage entries={entries} onImport={handleImport} onClear={handleClear} />
         )}
       </main>
+
+      {/* Persistence Footer */}
+      <footer className="no-print bg-white border-t border-slate-200 py-8 px-4 text-center mt-auto">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-sm text-slate-500 font-medium">
+            &copy; {new Date().getFullYear()} HiveTracker Pro • Private & Offline First
+          </div>
+          <div className="flex items-center space-x-6">
+            <a 
+              href={paypalUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-amber-600 hover:text-amber-700 font-bold text-sm flex items-center space-x-2 bg-amber-50 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.067 8.178c-.552 2.723-2.31 4.195-4.814 4.195H13.25l-.744 4.706h-3.414l1.625-10.276h4.524c2.51 0 4.27 1.472 4.826 4.195v1.18zm-4.814-1.18h-1.114l-.326 2.064h1.114c.732 0 1.258-.43 1.404-1.032v-.006c-.146-.596-.672-1.026-1.404-1.026z"/></svg>
+              <span>Buy me a coffee</span>
+            </a>
+            <span className="text-slate-300">|</span>
+            <div className="text-[10px] text-slate-400 uppercase font-black tracking-widest">
+              Build with privacy in mind
+            </div>
+          </div>
+        </div>
+      </footer>
 
       {/* Hidden Report Component for Printing - Outside main/nav/header for clean visibility */}
       <DoctorReport entries={entries} analysis={analysisResult} />
