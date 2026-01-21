@@ -12,8 +12,7 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     };
   }
 
-  // Initializing with the environment-provided API key.
-  // The availability of process.env.API_KEY is handled externally.
+  // The API key is obtained exclusively from the environment variable.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const entriesSummary = entries.map(e => ({
@@ -65,7 +64,6 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     const text = response.text;
     if (!text) throw new Error("AI returned an empty response.");
 
-    // The text property returns the string output directly
     const cleanJson = text.trim();
     return JSON.parse(cleanJson) as AnalysisResult;
   } catch (e: any) {
