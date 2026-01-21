@@ -69,14 +69,18 @@ const App: React.FC = () => {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center shadow-sm shadow-rose-200">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">
-              HiveTracker Pro
-            </h1>
+            <div>
+              <h1 className="text-lg font-bold text-slate-900 leading-none">HiveTracker Pro</h1>
+              <div className="flex items-center mt-1">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse mr-1.5"></span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Local Storage Active</span>
+              </div>
+            </div>
           </div>
           
           <nav className="hidden md:flex items-center space-x-2">
@@ -99,6 +103,10 @@ const App: React.FC = () => {
               Sync & Backup
             </button>
           </nav>
+
+          <div className="hidden lg:block border-l border-slate-200 ml-4 pl-4">
+             <span className="text-[10px] text-slate-400 font-medium">Core features work offline • No key required</span>
+          </div>
         </div>
       </header>
 
@@ -131,7 +139,8 @@ const App: React.FC = () => {
         {activeTab === 'log' && (
           <div className="max-w-2xl mx-auto">
             <HiveForm onAdd={addEntry} />
-            <div className="mt-8 grid grid-cols-2 gap-4">
+            
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-white p-4 rounded-xl border border-slate-200">
                 <span className="text-xs font-bold text-slate-400 uppercase">Total Logs</span>
                 <p className="text-2xl font-bold text-slate-800">{entries.length}</p>
@@ -140,6 +149,20 @@ const App: React.FC = () => {
                 <span className="text-xs font-bold text-slate-400 uppercase">Avg Severity</span>
                 <p className="text-2xl font-bold text-slate-800">
                   {entries.length > 0 ? (entries.reduce((acc, curr) => acc + curr.severity, 0) / entries.length).toFixed(1) : '0'}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-start space-x-3">
+              <div className="bg-blue-500 text-white rounded-full p-1 mt-0.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-blue-900 mb-0.5">Basic Tracking is 100% Free & Offline</p>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Your tracking data stays on this device. No accounts or API keys are required for basic logging, history, or doctor reports.
                 </p>
               </div>
             </div>

@@ -12,14 +12,9 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     };
   }
 
-  // Ensure we have a valid key before initializing
-  const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === "undefined" || apiKey === "") {
-    throw new Error("API key not found. Please select an API key from the setup panel.");
-  }
-
-  // Create a new instance right before the call to ensure the latest API key is used
-  const ai = new GoogleGenAI({ apiKey });
+  // Initializing with the environment-provided API key.
+  // The availability of process.env.API_KEY is handled externally.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const entriesSummary = entries.map(e => ({
     date: e.timestamp,
@@ -70,14 +65,11 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     const text = response.text;
     if (!text) throw new Error("AI returned an empty response.");
 
-    const cleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    // The text property returns the string output directly
+    const cleanJson = text.trim();
     return JSON.parse(cleanJson) as AnalysisResult;
   } catch (e: any) {
-    console.error("AI Analysis Error Detail:", e);
-    // Propagate meaningful errors back to the UI
-    if (e.message?.includes("API_KEY_INVALID") || e.message?.includes("API key not found") || e.message?.includes("must be set")) {
-        throw new Error("API key configuration error. Please select a valid key.");
-    }
-    throw e;
+    console.error("AI Analysis Error:", e);
+    throw new Error("The AI analysis service is temporarily unavailable. Please try again later.");
   }
 };

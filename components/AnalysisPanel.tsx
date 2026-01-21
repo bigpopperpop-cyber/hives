@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { HiveEntry, AnalysisResult } from '../types';
 import { analyzeHiveData } from '../services/geminiService';
 
@@ -12,31 +12,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needsKey, setNeedsKey] = useState(false);
 
-  useEffect(() => {
-    const checkKey = async () => {
-      const aistudio = (window as any).aistudio;
-      const envKey = process.env.API_KEY;
-      const hasEnvKey = envKey && envKey !== "undefined" && envKey !== "";
-      
-      if (aistudio) {
-        const hasSelectedKey = await aistudio.hasSelectedApiKey();
-        setNeedsKey(!hasSelectedKey && !hasEnvKey);
-      } else {
-        setNeedsKey(!hasEnvKey);
-      }
-    };
-    checkKey();
-  }, []);
-
-  const handleAnalyze = async (isRetry = false) => {
-    const aistudio = (window as any).aistudio;
-    const envKey = process.env.API_KEY;
-    const hasEnvKey = envKey && envKey !== "undefined" && envKey !== "";
-    
-    if (!isRetry && aistudio && !(await aistudio.hasSelectedApiKey()) && !hasEnvKey) {
-      setNeedsKey(true);
+  const handleAnalyze = async () => {
+    if (entries.length < 3) {
+      setError("Please log at least 3 entries to provide enough context for the AI.");
       return;
     }
 
@@ -46,34 +25,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
       const result = await analyzeHiveData(entries);
       setAnalysis(result);
       if (onAnalysisDone) onAnalysisDone(result);
-      setNeedsKey(false);
     } catch (err: any) {
-      console.error("Analysis Panel Error:", err);
-      const msg = err.message || "";
-      
-      if (msg.includes("API key") || msg.includes("must be set") || msg.includes("401") || msg.includes("403")) {
-        setNeedsKey(true);
-        setError("To enable AI analysis, please select an API key (Free Tier available).");
-      } else {
-        setError(msg || "Failed to generate AI insights. Please try again.");
-      }
+      setError(err.message || "Failed to generate AI insights. Please try again.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleOpenKeyDialog = async () => {
-    const aistudio = (window as any).aistudio;
-    if (aistudio) {
-      try {
-        await aistudio.openSelectKey();
-        setNeedsKey(false);
-        setError(null);
-        // Assume success and proceed
-        setTimeout(() => handleAnalyze(true), 500);
-      } catch (err) {
-        setError("Could not open key selector. Please try again.");
-      }
     }
   };
 
@@ -88,21 +43,23 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
       <div className="relative z-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-2xl font-bold flex items-center">
-              <svg className="w-6 h-6 mr-2 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Smart Pattern Analysis
-            </h2>
+            <div className="flex items-center mb-1">
+              <h2 className="text-2xl font-bold flex items-center">
+                <svg className="w-6 h-6 mr-2 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Smart Pattern Analysis
+              </h2>
+            </div>
             <p className="text-indigo-200">
               AI-driven insights into your symptoms and triggers.
             </p>
           </div>
           
-          {!needsKey && !analysis && (
+          {!analysis && (
             <button
-              onClick={() => handleAnalyze()}
-              disabled={loading || entries.length === 0}
+              onClick={handleAnalyze}
+              disabled={loading || entries.length < 3}
               className={`bg-white text-indigo-900 font-bold py-3 px-8 rounded-xl transition-all shadow-lg hover:bg-indigo-50 disabled:opacity-50 flex items-center whitespace-nowrap`}
             >
               {loading ? (
@@ -118,37 +75,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
           )}
         </div>
 
-        {needsKey ? (
-          <div className="bg-white/10 border border-white/20 rounded-2xl p-6 backdrop-blur-sm max-w-xl">
-            <div className="flex items-center space-x-2 mb-3">
-              <h3 className="text-lg font-bold text-white">AI Setup</h3>
-              <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30 uppercase tracking-wider">Free Tier Available</span>
-            </div>
-            <p className="text-sm text-indigo-200 mb-6 leading-relaxed">
-              To keep your health data private, this app uses the Gemini API directly. You can get a <strong>Free API Key</strong> from Google AI Studio to unlock these insights.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={handleOpenKeyDialog}
-                className="bg-white text-indigo-900 font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:bg-indigo-50 flex items-center justify-center"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                </svg>
-                Connect Gemini API
-              </button>
-              <a 
-                href="https://aistudio.google.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-indigo-300 hover:text-white text-sm flex items-center justify-center font-medium"
-              >
-                Get a Free Key 
-                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </a>
-            </div>
-          </div>
-        ) : analysis ? (
+        {analysis ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-500">
             <div className="bg-white/10 rounded-xl p-5 border border-white/10">
               <h3 className="text-indigo-300 font-semibold mb-2 flex items-center">
@@ -184,7 +111,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
             </div>
             
             <button 
-              onClick={() => handleAnalyze()}
+              onClick={handleAnalyze}
               disabled={loading}
               className="md:col-span-2 mt-2 text-indigo-300 hover:text-white text-sm font-medium underline underline-offset-4"
             >
@@ -192,17 +119,20 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
             </button>
           </div>
         ) : entries.length < 3 ? (
-          <div className="bg-indigo-800/50 rounded-xl p-4 text-indigo-100 text-sm border border-indigo-700/50">
-            💡 Log at least <strong>3 entries</strong> to help the AI find meaningful patterns.
+          <div className="bg-indigo-800/50 rounded-xl p-4 text-indigo-100 text-sm border border-indigo-700/50 flex items-center">
+            <svg className="w-5 h-5 mr-3 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Log at least <strong>3 entries</strong> to help the AI find meaningful patterns.</span>
           </div>
         ) : null}
         
         {error && (
-          <div className="mt-4 p-3 bg-rose-500/20 border border-rose-500/30 rounded-xl text-rose-200 text-xs flex items-center">
-            <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{error}</span>
+          <div className="mt-4 p-3 bg-rose-500/20 border border-rose-500/30 rounded-xl text-rose-100 text-sm flex items-center">
+             <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+             </svg>
+             {error}
           </div>
         )}
       </div>

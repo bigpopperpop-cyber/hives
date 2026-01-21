@@ -7,6 +7,11 @@ interface HiveFormProps {
   onAdd: (entry: HiveEntry) => void;
 }
 
+const COMMON_TRIGGERS = [
+  'Stress', 'Heat', 'Cold', 'Dairy', 'Seafood', 'Alcohol', 
+  'Detergent', 'Sweat', 'Pressure', 'Medication'
+];
+
 const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
   const [severity, setSeverity] = useState(5);
   const [selectedLocations, setSelectedLocations] = useState<BodyArea[]>(['Torso']);
@@ -20,6 +25,15 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
         ? prev.filter(a => a !== area) 
         : [...prev, area]
     );
+  };
+
+  const addTriggerChip = (chip: string) => {
+    setTriggers(prev => {
+      const current = prev.trim();
+      if (!current) return chip;
+      if (current.toLowerCase().includes(chip.toLowerCase())) return prev;
+      return `${current}, ${chip}`;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -61,18 +75,18 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
               type="datetime-local"
               value={timestamp}
               onChange={(e) => setTimestamp(e.target.value)}
-              className="w-full rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500"
+              className="w-full rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500 text-sm"
               required
             />
           </div>
           <div className="flex items-end">
-             <p className="text-xs text-slate-400 italic mb-1">Select all areas where you have hives.</p>
+             <p className="text-xs text-slate-400 italic mb-1">Select all affected areas.</p>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-2">Affected Areas (Multi-select)</label>
-          <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
+          <label className="block text-sm font-medium text-slate-600 mb-2">Affected Areas</label>
+          <div className="grid grid-cols-3 gap-2">
             {BODY_AREAS.map(area => {
               const isSelected = selectedLocations.includes(area);
               return (
@@ -80,10 +94,10 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
                   key={area}
                   type="button"
                   onClick={() => toggleLocation(area)}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${
+                  className={`py-2.5 px-2 rounded-xl text-[11px] font-bold border transition-all ${
                     isSelected 
                       ? 'bg-rose-500 border-rose-500 text-white shadow-sm' 
-                      : 'bg-white border-slate-200 text-slate-600 hover:border-rose-300'
+                      : 'bg-white border-slate-200 text-slate-500 hover:border-rose-300'
                   }`}
                 >
                   {area}
@@ -105,7 +119,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
             onChange={(e) => setSeverity(parseInt(e.target.value))}
             className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-500"
           />
-          <div className="flex justify-between text-xs text-slate-400 px-1 mt-1">
+          <div className="flex justify-between text-[10px] font-bold text-slate-400 px-1 mt-1 uppercase tracking-wider">
             <span>Mild</span>
             <span>Moderate</span>
             <span>Intense</span>
@@ -118,9 +132,21 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
             type="text"
             value={triggers}
             onChange={(e) => setTriggers(e.target.value)}
-            placeholder="e.g. Seafood, New laundry detergent, Stress..."
-            className="w-full rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500"
+            placeholder="e.g. Seafood, New laundry detergent..."
+            className="w-full rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500 text-sm mb-3"
           />
+          <div className="flex flex-wrap gap-1.5">
+            {COMMON_TRIGGERS.map(chip => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => addTriggerChip(chip)}
+                className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-md hover:bg-slate-200 hover:text-slate-700 transition-colors"
+              >
+                + {chip}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div>
@@ -130,15 +156,18 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Any other symptoms or contexts?"
             rows={2}
-            className="w-full rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500"
+            className="w-full rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500 text-sm"
           />
         </div>
 
         <button
           type="submit"
-          className="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-md shadow-rose-200"
+          className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 px-6 rounded-2xl transition-all shadow-lg shadow-rose-200 flex items-center justify-center space-x-2 active:scale-[0.98]"
         >
-          Save Log Entry
+          <span>Save Log Entry</span>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+          </svg>
         </button>
       </form>
     </div>
