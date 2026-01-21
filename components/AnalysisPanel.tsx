@@ -20,8 +20,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
       const result = await analyzeHiveData(entries);
       setAnalysis(result);
       if (onAnalysisDone) onAnalysisDone(result);
-    } catch (err) {
-      setError("Failed to generate AI insights. Please try again.");
+    } catch (err: any) {
+      console.error("Analysis Panel Error:", err);
+      setError(err.message || "Failed to generate AI insights. Check your internet or try again later.");
     } finally {
       setLoading(false);
     }
@@ -60,11 +61,15 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
                 Top Suspected Triggers
               </h3>
               <div className="flex flex-wrap gap-2">
-                {analysis.commonTriggers.map((t, i) => (
-                  <span key={i} className="bg-rose-500/30 text-rose-100 px-3 py-1 rounded-full text-sm">
-                    {t}
-                  </span>
-                ))}
+                {analysis.commonTriggers.length > 0 ? (
+                  analysis.commonTriggers.map((t, i) => (
+                    <span key={i} className="bg-rose-500/30 text-rose-100 px-3 py-1 rounded-full text-sm">
+                      {t}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-slate-400 text-sm">Insufficient data for triggers</span>
+                )}
               </div>
             </div>
 
@@ -109,7 +114,14 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
           </button>
         )}
         
-        {error && <p className="mt-4 text-rose-400 text-sm">{error}</p>}
+        {error && (
+          <div className="mt-4 p-3 bg-rose-500/20 border border-rose-500/30 rounded-xl text-rose-200 text-xs flex items-center">
+            <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{error}</span>
+          </div>
+        )}
       </div>
     </div>
   );
