@@ -64,9 +64,9 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 no-print">
+    <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 no-print">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center shadow-sm shadow-rose-200">
@@ -111,7 +111,7 @@ const App: React.FC = () => {
       </header>
 
       {/* Mobile Nav */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 h-16 flex items-center justify-around z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 h-16 flex items-center justify-around z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] no-print">
         <button 
           onClick={() => setActiveTab('log')}
           className={`flex flex-col items-center space-y-1 ${activeTab === 'log' ? 'text-rose-500' : 'text-slate-400'}`}
@@ -135,7 +135,7 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8 pb-24 no-print">
         {activeTab === 'log' && (
           <div className="max-w-2xl mx-auto">
             <HiveForm onAdd={addEntry} />
@@ -267,7 +267,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Hidden Report Component for Printing */}
+      {/* Hidden Report Component for Printing - Outside main/nav/header for clean visibility */}
       <DoctorReport entries={entries} analysis={analysisResult} />
     </div>
   );

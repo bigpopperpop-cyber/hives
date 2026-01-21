@@ -14,10 +14,12 @@
         background-color: #f8fafc;
       }
       @media print {
-        body { background-color: white; }
+        body { 
+          background-color: white !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
         .no-print { display: none !important; }
-        #root > div:not(#printable-report) { display: none !important; }
-        #printable-report { display: block !important; }
       }
     </style>
   <script type="importmap">
