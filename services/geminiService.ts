@@ -12,8 +12,14 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     };
   }
 
+  // Ensure we have a valid key before initializing
+  const apiKey = process.env.API_KEY;
+  if (!apiKey || apiKey === "undefined" || apiKey === "") {
+    throw new Error("API key not found. Please select an API key from the setup panel.");
+  }
+
   // Create a new instance right before the call to ensure the latest API key is used
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   
   const entriesSummary = entries.map(e => ({
     date: e.timestamp,
@@ -25,7 +31,7 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: [{
         parts: [{
           text: `Analyze these patient hive breakout logs. Identify recurring triggers, explain severity trends, find patterns between location and triggers, and provide supportive management advice.
@@ -69,8 +75,8 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
   } catch (e: any) {
     console.error("AI Analysis Error Detail:", e);
     // Propagate meaningful errors back to the UI
-    if (e.message?.includes("API_KEY_INVALID") || e.message?.includes("API key not found")) {
-        throw new Error("Invalid API key. Please select a key from a paid project with billing enabled.");
+    if (e.message?.includes("API_KEY_INVALID") || e.message?.includes("API key not found") || e.message?.includes("must be set")) {
+        throw new Error("API key configuration error. Please select a valid key.");
     }
     throw e;
   }
