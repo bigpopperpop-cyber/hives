@@ -5,9 +5,10 @@ import { analyzeHiveData } from '../services/geminiService';
 
 interface AnalysisPanelProps {
   entries: HiveEntry[];
+  onAnalysisDone?: (result: AnalysisResult) => void;
 }
 
-const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries }) => {
+const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }) => {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +19,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries }) => {
     try {
       const result = await analyzeHiveData(entries);
       setAnalysis(result);
+      if (onAnalysisDone) onAnalysisDone(result);
     } catch (err) {
       setError("Failed to generate AI insights. Please try again.");
     } finally {

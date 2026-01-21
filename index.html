@@ -13,6 +13,12 @@
         font-family: 'Inter', sans-serif;
         background-color: #f8fafc;
       }
+      @media print {
+        body { background-color: white; }
+        .no-print { display: none !important; }
+        #root > div:not(#printable-report) { display: none !important; }
+        #printable-report { display: block !important; }
+      }
     </style>
   <script type="importmap">
 {

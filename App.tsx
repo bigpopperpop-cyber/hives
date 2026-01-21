@@ -4,7 +4,8 @@ import HiveForm from './components/HiveForm';
 import HistoryCharts from './components/HistoryCharts';
 import AnalysisPanel from './components/AnalysisPanel';
 import SyncPage from './components/SyncPage';
-import { HiveEntry } from './types';
+import DoctorReport from './components/DoctorReport';
+import { HiveEntry, AnalysisResult } from './types';
 import { STORAGE_KEY } from './constants';
 
 type Tab = 'log' | 'history' | 'sync';
@@ -12,6 +13,7 @@ type Tab = 'log' | 'history' | 'sync';
 const App: React.FC = () => {
   const [entries, setEntries] = useState<HiveEntry[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('log');
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -57,8 +59,12 @@ const App: React.FC = () => {
     alert("All logs cleared.");
   };
 
+  const generatePDF = () => {
+    window.print();
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-slate-50 pb-20 no-print">
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -142,17 +148,33 @@ const App: React.FC = () => {
 
         {activeTab === 'history' && (
           <div className="space-y-8">
-            <AnalysisPanel entries={entries} />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">Your Insights</h2>
+                <p className="text-slate-500">View trends and generate reports for medical use.</p>
+              </div>
+              <button 
+                onClick={generatePDF}
+                disabled={entries.length === 0}
+                className="flex items-center justify-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg disabled:opacity-50"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Export PDF for Doctor</span>
+              </button>
+            </div>
+
+            <AnalysisPanel entries={entries} onAnalysisDone={setAnalysisResult} />
             
             <section>
-              <h2 className="text-2xl font-bold text-slate-800 mb-2">Visual Breakdown</h2>
-              <p className="text-slate-500 mb-6">Trends and statistics from your logged data.</p>
+              <h2 className="text-xl font-bold text-slate-800 mb-6">Visual Breakdown</h2>
               <HistoryCharts entries={entries} />
             </section>
 
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-slate-800">Entry History</h2>
+                <h2 className="text-xl font-bold text-slate-800">Entry History</h2>
                 <span className="text-sm font-medium text-slate-500">{entries.length} entries recorded</span>
               </div>
               
@@ -162,7 +184,6 @@ const App: React.FC = () => {
                     <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   </div>
                   <h3 className="text-lg font-bold text-slate-800 mb-1">No history yet</h3>
-                  <p className="text-slate-500 mb-6">Start by logging your current or past breakouts.</p>
                   <button onClick={() => setActiveTab('log')} className="bg-rose-500 text-white px-6 py-2 rounded-xl font-semibold shadow-md shadow-rose-200">
                     Add First Entry
                   </button>
@@ -199,7 +220,7 @@ const App: React.FC = () => {
                       </div>
 
                       {entry.notes && (
-                        <div className="bg-slate-50 p-3 rounded-lg text-xs text-slate-500 mb-2">
+                        <div className="bg-slate-50 p-3 rounded-lg text-xs text-slate-500 mb-2 line-clamp-2">
                           {entry.notes}
                         </div>
                       )}
@@ -207,7 +228,6 @@ const App: React.FC = () => {
                       <button 
                         onClick={() => deleteEntry(entry.id)}
                         className="absolute bottom-4 right-4 text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
-                        title="Delete entry"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                       </button>
@@ -223,6 +243,9 @@ const App: React.FC = () => {
           <SyncPage entries={entries} onImport={handleImport} onClear={handleClear} />
         )}
       </main>
+
+      {/* Hidden Report Component for Printing */}
+      <DoctorReport entries={entries} analysis={analysisResult} />
     </div>
   );
 };
