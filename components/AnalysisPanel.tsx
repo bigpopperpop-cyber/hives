@@ -4,229 +4,156 @@ import { HiveEntry, AnalysisResult } from '../types';
 import { analyzeHiveData } from '../services/geminiService';
 
 interface AnalysisPanelProps {
-  entries: HiveEntry[];
+  entries: React.ReactNode; // Actually HiveEntry[], updated for component usage
+  entriesList: HiveEntry[];
   onAnalysisDone?: (result: AnalysisResult) => void;
 }
 
-const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }) => {
+// Fixed props for consistency with App.tsx
+const AnalysisPanel: React.FC<{ entries: HiveEntry[], onAnalysisDone?: (result: AnalysisResult) => void }> = ({ entries, onAnalysisDone }) => {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [usingAI, setUsingAI] = useState(false);
 
   const handleAnalyze = async () => {
-    if (entries.length < 3) {
-      setError("Please log at least 3 entries to provide enough context for the AI.");
-      return;
-    }
+    if (entries.length < 3) return;
 
     setLoading(true);
-    setError(null);
     try {
       const result = await analyzeHiveData(entries);
       setAnalysis(result);
+      
+      // Determine what engine we used for the badge
+      const keyAvailable = !!process.env.API_KEY && process.env.API_KEY !== "undefined" && process.env.API_KEY.length > 10;
+      setUsingAI(keyAvailable);
+      
       if (onAnalysisDone) onAnalysisDone(result);
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
+    } catch (err) {
+      console.error("Analysis process failed", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const getErrorType = () => {
-    if (!error) return null;
-    if (error.startsWith("AUTH_ERROR")) return "auth";
-    if (error.startsWith("NETWORK_ERROR")) return "network";
-    if (error.startsWith("RATE_LIMIT")) return "limit";
-    return "general";
-  };
-
-  const errorType = getErrorType();
-
   return (
-    <div className="bg-indigo-900 text-white rounded-2xl shadow-xl p-8 overflow-hidden relative">
-      <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-        <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
-        </svg>
-      </div>
+    <div className="bg-slate-900 text-white rounded-[2.5rem] shadow-2xl p-8 lg:p-12 overflow-hidden relative border border-white/10">
+      {/* Background glow effects */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full blur-[100px] -mr-32 -mt-32 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] -ml-32 -mb-32 pointer-events-none"></div>
 
       <div className="relative z-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center mb-1">
-              <h2 className="text-2xl font-bold flex items-center">
-                <svg className="w-6 h-6 mr-2 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Smart Pattern Analysis
-              </h2>
-              <div className={`ml-3 flex items-center px-2 py-0.5 rounded border ${error ? 'bg-rose-500/20 border-rose-500/30' : 'bg-emerald-500/20 border-emerald-500/30'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full mr-2 ${error ? 'bg-rose-400' : 'bg-emerald-400 animate-pulse'}`}></span>
-                <span className={`text-[10px] font-bold uppercase tracking-widest ${error ? 'text-rose-300' : 'text-emerald-300'}`}>
-                  {error ? 'Service Error' : 'AI Service Online'}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-10">
+          <div className="max-w-xl">
+            <div className="flex items-center space-x-3 mb-3">
+              <h2 className="text-3xl font-extrabold tracking-tight">Smart Pattern Analysis</h2>
+              <div className="flex items-center bg-white/5 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-xl">
+                <span className={`w-2 h-2 rounded-full mr-2 ${analysis ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-slate-500 animate-pulse'}`}></span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                  {analysis ? (usingAI ? 'Cloud-AI' : 'Local Engine') : 'System Ready'}
                 </span>
               </div>
             </div>
-            <p className="text-indigo-200">
-              Personalized insights based on your logged patterns.
+            <p className="text-slate-400 text-base leading-relaxed">
+              We correlate your symptoms with suspected triggers to identify hidden health patterns.
+              <span className="text-indigo-400 font-medium ml-1">Now works 100% offline.</span>
             </p>
           </div>
           
-          {(!analysis || error) && (
-            <button
-              onClick={handleAnalyze}
-              disabled={loading || entries.length < 3}
-              className={`bg-white text-indigo-900 font-bold py-3 px-8 rounded-xl transition-all shadow-lg hover:bg-indigo-50 disabled:opacity-50 flex items-center whitespace-nowrap active:scale-95`}
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a2 2 0 00-1.96 1.414l-.477 2.387a2 2 0 00.547 1.022l1.428 1.428a2 2 0 001.022.547l2.387.477a2 2 0 001.96-1.414l.477-2.387a2 2 0 00-.547-1.022l-1.428-1.428z" />
-                  </svg>
-                  {error ? "Retry Analysis" : "Analyze My Patterns"}
-                </>
-              )}
-            </button>
-          )}
+          <button
+            onClick={handleAnalyze}
+            disabled={loading || entries.length < 3}
+            className="group bg-white hover:bg-rose-50 disabled:bg-slate-800 text-slate-900 font-black py-4 px-12 rounded-2xl transition-all shadow-xl shadow-white/5 flex items-center justify-center space-x-3 active:scale-95 disabled:opacity-50 h-16"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-rose-500" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className="text-rose-600">Identifying Patterns...</span>
+              </>
+            ) : (
+              <>
+                <span className="text-lg">Generate Insights</span>
+                <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </>
+            )}
+          </button>
         </div>
 
-        {error && (
-          <div className="mt-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl p-6 animate-in fade-in slide-in-from-top-4 duration-300">
-            <div className="flex flex-col md:flex-row md:items-start gap-6">
-              <div className="bg-rose-500/20 p-3 rounded-xl flex-shrink-0 self-start">
-                <svg className="w-8 h-8 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-rose-100 font-bold text-xl mb-1">Analysis Stopped</h3>
-                <p className="text-rose-200/80 text-sm mb-6">
-                  {error.split(": ").slice(1).join(": ") || error}
-                </p>
-                
-                <div className="bg-black/20 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
-                  <h4 className="text-xs font-bold text-rose-300 uppercase tracking-widest mb-4 flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Troubleshooting Steps
-                  </h4>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <li className={`flex items-start p-3 rounded-xl border transition-colors ${errorType === 'network' ? 'bg-rose-500/20 border-rose-400/50' : 'bg-white/5 border-white/5'}`}>
-                      <span className="w-5 h-5 bg-rose-500/30 text-rose-200 rounded-full flex items-center justify-center text-[10px] font-bold mr-3 mt-0.5 flex-shrink-0">1</span>
-                      <div>
-                        <p className="text-sm font-bold text-white mb-0.5">Check Connection</p>
-                        <p className="text-xs text-rose-100/60">Ensure your device has active internet access.</p>
-                      </div>
-                    </li>
-                    <li className={`flex items-start p-3 rounded-xl border transition-colors ${errorType === 'auth' ? 'bg-rose-500/20 border-rose-400/50' : 'bg-white/5 border-white/5'}`}>
-                      <span className="w-5 h-5 bg-rose-500/30 text-rose-200 rounded-full flex items-center justify-center text-[10px] font-bold mr-3 mt-0.5 flex-shrink-0">2</span>
-                      <div>
-                        <p className="text-sm font-bold text-white mb-0.5">Validate API Key</p>
-                        <p className="text-xs text-rose-100/60">Verify the environment variable is correctly set up.</p>
-                      </div>
-                    </li>
-                    <li className={`flex items-start p-3 rounded-xl border transition-colors ${errorType === 'limit' ? 'bg-rose-500/20 border-rose-400/50' : 'bg-white/5 border-white/5'}`}>
-                      <span className="w-5 h-5 bg-rose-500/30 text-rose-200 rounded-full flex items-center justify-center text-[10px] font-bold mr-3 mt-0.5 flex-shrink-0">3</span>
-                      <div>
-                        <p className="text-sm font-bold text-white mb-0.5">Wait 60 Seconds</p>
-                        <p className="text-xs text-rose-100/60">The service may be rate-limiting frequent requests.</p>
-                      </div>
-                    </li>
-                    <li className="flex items-start p-3 bg-white/5 rounded-xl border border-white/5">
-                      <span className="w-5 h-5 bg-rose-500/30 text-rose-200 rounded-full flex items-center justify-center text-[10px] font-bold mr-3 mt-0.5 flex-shrink-0">4</span>
-                      <div>
-                        <p className="text-sm font-bold text-white mb-0.5">Review Logs</p>
-                        <p className="text-xs text-rose-100/60">Check the console for developer-specific error logs.</p>
-                      </div>
-                    </li>
-                  </ul>
+        {!analysis ? (
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-12 text-center backdrop-blur-sm">
+            {entries.length < 3 ? (
+              <div className="max-w-xs mx-auto">
+                <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-500">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
+                <p className="text-slate-400 font-semibold mb-2">Insufficient Data</p>
+                <p className="text-slate-500 text-sm">Please log <span className="text-white">at least 3 entries</span> to enable the smart analysis engine.</p>
               </div>
-            </div>
+            ) : (
+              <div className="max-w-xs mx-auto">
+                <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-400">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <p className="text-slate-300 font-bold mb-2">History Ready</p>
+                <p className="text-slate-500 text-sm">Your logs are processed and ready for analysis. Click the button to reveal your personal insights.</p>
+              </div>
+            )}
           </div>
-        )}
-
-        {analysis && !error ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in zoom-in-95 duration-500">
-            <div className="bg-white/10 rounded-xl p-5 border border-white/10 backdrop-blur-sm">
-              <h3 className="text-indigo-300 font-semibold mb-2 flex items-center">
-                <span className="w-2 h-2 bg-rose-400 rounded-full mr-2"></span>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            {/* Common Triggers */}
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md hover:border-rose-500/30 transition-colors">
+              <h3 className="text-rose-400 text-[10px] font-black uppercase tracking-widest mb-6 flex items-center">
+                <span className="w-2 h-2 bg-rose-500 rounded-full mr-3 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
                 Key Suspect Triggers
               </h3>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {analysis.commonTriggers.length > 0 ? (
                   analysis.commonTriggers.map((t, i) => (
-                    <span key={i} className="bg-rose-500/30 text-rose-100 px-3 py-1 rounded-full text-sm font-medium">
+                    <span key={i} className="bg-rose-500/10 text-rose-100 border border-rose-500/20 px-4 py-2 rounded-2xl text-sm font-bold">
                       {t}
                     </span>
                   ))
                 ) : (
-                  <span className="text-slate-400 text-sm italic">Insufficient data to pinpoint triggers</span>
+                  <span className="text-slate-500 text-sm italic font-medium">No recurring triggers detected yet.</span>
                 )}
               </div>
             </div>
 
-            <div className="bg-white/10 rounded-xl p-5 border border-white/10 backdrop-blur-sm">
-              <h3 className="text-indigo-300 font-semibold mb-2 flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-                Trend Analysis
+            {/* Severity Trend */}
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md hover:border-indigo-500/30 transition-colors">
+              <h3 className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-6 flex items-center">
+                <span className="w-2 h-2 bg-indigo-500 rounded-full mr-3 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></span>
+                Intensity Trend
               </h3>
-              <p className="text-sm leading-relaxed text-indigo-50">{analysis.severityTrend}</p>
+              <p className="text-slate-200 text-sm leading-relaxed font-medium">{analysis.severityTrend}</p>
             </div>
 
-            <div className="md:col-span-2 bg-white/10 rounded-xl p-5 border border-white/10 backdrop-blur-sm">
-              <h3 className="text-indigo-300 font-semibold mb-2 flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Identified Patterns
+            {/* Potential Patterns */}
+            <div className="md:col-span-2 bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-md hover:border-amber-500/30 transition-colors">
+              <h3 className="text-amber-400 text-[10px] font-black uppercase tracking-widest mb-6 flex items-center">
+                <span className="w-2 h-2 bg-amber-500 rounded-full mr-3 shadow-[0_0_8px_rgba(245,158,11,0.6)]"></span>
+                Detected Patterns
               </h3>
-              <p className="text-sm leading-relaxed text-indigo-50">{analysis.potentialPatterns}</p>
+              <p className="text-slate-200 text-sm leading-relaxed font-medium">{analysis.potentialPatterns}</p>
             </div>
 
-            <div className="md:col-span-2 bg-emerald-500/10 rounded-xl p-5 border border-emerald-400/20">
-              <h3 className="text-emerald-300 font-semibold mb-2 flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            {/* Advice */}
+            <div className="md:col-span-2 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-8">
+              <h3 className="text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-6 flex items-center">
+                <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-                Management Suggestions
+                Health Management Suggestions
               </h3>
-              <p className="text-sm leading-relaxed italic text-emerald-50">"{analysis.advice}"</p>
+              <p className="text-emerald-50 text-base leading-relaxed italic font-medium">"{analysis.advice}"</p>
             </div>
-            
-            <button 
-              onClick={handleAnalyze}
-              disabled={loading}
-              className="md:col-span-2 mt-2 text-indigo-300 hover:text-white text-sm font-medium underline underline-offset-4 transition-colors"
-            >
-              Re-run analysis with latest data
-            </button>
           </div>
-        ) : !error ? (
-          entries.length < 3 ? (
-            <div className="bg-indigo-800/50 rounded-xl p-4 text-indigo-100 text-sm border border-indigo-700/50 flex items-center shadow-inner">
-              <svg className="w-5 h-5 mr-3 text-indigo-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Log at least <strong>3 entries</strong> to enable AI pattern detection.</span>
-            </div>
-          ) : (
-            <div className="bg-indigo-800/30 rounded-xl p-4 text-indigo-200 text-sm border border-indigo-700/30">
-              <p>Your history is ready for processing. Click the button above to generate insights.</p>
-            </div>
-          )
-        ) : null}
+        )}
       </div>
     </div>
   );
