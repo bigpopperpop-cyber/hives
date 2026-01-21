@@ -35,7 +35,6 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
     const envKey = process.env.API_KEY;
     const hasEnvKey = envKey && envKey !== "undefined" && envKey !== "";
     
-    // If we definitely don't have a key and are in an environment that supports selecting one.
     if (!isRetry && aistudio && !(await aistudio.hasSelectedApiKey()) && !hasEnvKey) {
       setNeedsKey(true);
       return;
@@ -52,10 +51,9 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
       console.error("Analysis Panel Error:", err);
       const msg = err.message || "";
       
-      // Handle the specific key errors
-      if (msg.includes("Requested entity was not found") || msg.includes("API key") || msg.includes("must be set")) {
+      if (msg.includes("API key") || msg.includes("must be set") || msg.includes("401") || msg.includes("403")) {
         setNeedsKey(true);
-        setError("API access required. Please click below to select a key from a paid project.");
+        setError("To enable AI analysis, please select an API key (Free Tier available).");
       } else {
         setError(msg || "Failed to generate AI insights. Please try again.");
       }
@@ -71,10 +69,10 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
         await aistudio.openSelectKey();
         setNeedsKey(false);
         setError(null);
-        // Delay slightly to allow the environment to update process.env.API_KEY
+        // Assume success and proceed
         setTimeout(() => handleAnalyze(true), 500);
       } catch (err) {
-        setError("Failed to open key selector. Please refresh the page.");
+        setError("Could not open key selector. Please try again.");
       }
     }
   };
@@ -97,7 +95,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
               Smart Pattern Analysis
             </h2>
             <p className="text-indigo-200">
-              AI analysis of your triggers, severity trends, and habits.
+              AI-driven insights into your symptoms and triggers.
             </p>
           </div>
           
@@ -113,36 +111,49 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Analyzing...
+                  Processing...
                 </>
-              ) : "Generate AI Insights"}
+              ) : "Analyze My Data"}
             </button>
           )}
         </div>
 
         {needsKey ? (
           <div className="bg-white/10 border border-white/20 rounded-2xl p-6 backdrop-blur-sm max-w-xl">
-            <h3 className="text-lg font-bold text-white mb-2">API Setup Required</h3>
+            <div className="flex items-center space-x-2 mb-3">
+              <h3 className="text-lg font-bold text-white">AI Setup</h3>
+              <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30 uppercase tracking-wider">Free Tier Available</span>
+            </div>
             <p className="text-sm text-indigo-200 mb-6 leading-relaxed">
-              To process your health data privately using Gemini, you need to select an API key from a <strong>paid project</strong>. 
-              Review the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="underline hover:text-white">billing docs</a> for details.
+              To keep your health data private, this app uses the Gemini API directly. You can get a <strong>Free API Key</strong> from Google AI Studio to unlock these insights.
             </p>
-            <button
-              onClick={handleOpenKeyDialog}
-              className="bg-white text-indigo-900 font-bold py-3 px-8 rounded-xl transition-all shadow-lg hover:bg-indigo-50 flex items-center"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
-              Select API Key to Enable AI
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={handleOpenKeyDialog}
+                className="bg-white text-indigo-900 font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:bg-indigo-50 flex items-center justify-center"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+                Connect Gemini API
+              </button>
+              <a 
+                href="https://aistudio.google.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-indigo-300 hover:text-white text-sm flex items-center justify-center font-medium"
+              >
+                Get a Free Key 
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </a>
+            </div>
           </div>
         ) : analysis ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-500">
             <div className="bg-white/10 rounded-xl p-5 border border-white/10">
               <h3 className="text-indigo-300 font-semibold mb-2 flex items-center">
                 <span className="w-2 h-2 bg-rose-400 rounded-full mr-2"></span>
-                Top Suspected Triggers
+                Key Suspect Triggers
               </h3>
               <div className="flex flex-wrap gap-2">
                 {analysis.commonTriggers.length > 0 ? (
@@ -152,13 +163,13 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
                     </span>
                   ))
                 ) : (
-                  <span className="text-slate-400 text-sm">Insufficient data for triggers</span>
+                  <span className="text-slate-400 text-sm">No clear triggers found</span>
                 )}
               </div>
             </div>
 
             <div className="bg-white/10 rounded-xl p-5 border border-white/10">
-              <h3 className="text-indigo-300 font-semibold mb-2">Severity Trend</h3>
+              <h3 className="text-indigo-300 font-semibold mb-2">Trend Analysis</h3>
               <p className="text-sm leading-relaxed">{analysis.severityTrend}</p>
             </div>
 
@@ -168,7 +179,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
             </div>
 
             <div className="md:col-span-2 bg-indigo-500/20 rounded-xl p-5 border border-indigo-400/30">
-              <h3 className="text-emerald-300 font-semibold mb-2">Health Recommendations</h3>
+              <h3 className="text-emerald-300 font-semibold mb-2">Management Suggestions</h3>
               <p className="text-sm leading-relaxed italic">"{analysis.advice}"</p>
             </div>
             
@@ -177,12 +188,12 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
               disabled={loading}
               className="md:col-span-2 mt-2 text-indigo-300 hover:text-white text-sm font-medium underline underline-offset-4"
             >
-              Update analysis with latest logs
+              Refresh Analysis
             </button>
           </div>
         ) : entries.length < 3 ? (
           <div className="bg-indigo-800/50 rounded-xl p-4 text-indigo-100 text-sm border border-indigo-700/50">
-            💡 Add at least <strong>3 entries</strong> to unlock pattern analysis.
+            💡 Log at least <strong>3 entries</strong> to help the AI find meaningful patterns.
           </div>
         ) : null}
         
