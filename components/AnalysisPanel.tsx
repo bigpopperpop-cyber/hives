@@ -60,7 +60,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
             </p>
           </div>
           
-          {!analysis && (
+          {(!analysis || error) && (
             <button
               onClick={handleAnalyze}
               disabled={loading || entries.length < 3}
@@ -79,14 +79,52 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a2 2 0 00-1.96 1.414l-.477 2.387a2 2 0 00.547 1.022l1.428 1.428a2 2 0 001.022.547l2.387.477a2 2 0 001.96-1.414l.477-2.387a2 2 0 00-.547-1.022l-1.428-1.428z" />
                   </svg>
-                  Analyze My Patterns
+                  {error ? "Retry Analysis" : "Analyze My Patterns"}
                 </>
               )}
             </button>
           )}
         </div>
 
-        {analysis ? (
+        {error && (
+          <div className="mt-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl p-6 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex items-start">
+              <div className="bg-rose-500/20 p-2 rounded-lg mr-4">
+                <svg className="w-6 h-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-rose-100 font-bold text-lg mb-1">Analysis Encountered a Problem</h3>
+                <p className="text-rose-200/80 text-sm mb-4">{error}</p>
+                
+                <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+                  <p className="text-xs font-bold text-rose-300 uppercase tracking-widest mb-2">Troubleshooting Steps:</p>
+                  <ul className="text-xs text-rose-100/70 space-y-2">
+                    <li className="flex items-center">
+                      <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-2"></span>
+                      Verify your internet connection is stable.
+                    </li>
+                    <li className="flex items-center">
+                      <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-2"></span>
+                      Check if the API key in your environment is valid and has Gemini access.
+                    </li>
+                    <li className="flex items-center">
+                      <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-2"></span>
+                      Wait 60 seconds if you've recently performed multiple analyses.
+                    </li>
+                    <li className="flex items-center">
+                      <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-2"></span>
+                      Ensure your browser isn't blocking outgoing AI service requests.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {analysis && !error ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in zoom-in-95 duration-500">
             <div className="bg-white/10 rounded-xl p-5 border border-white/10 backdrop-blur-sm">
               <h3 className="text-indigo-300 font-semibold mb-2 flex items-center">
@@ -144,30 +182,20 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
               Re-run analysis with latest data
             </button>
           </div>
-        ) : entries.length < 3 ? (
-          <div className="bg-indigo-800/50 rounded-xl p-4 text-indigo-100 text-sm border border-indigo-700/50 flex items-center shadow-inner">
-            <svg className="w-5 h-5 mr-3 text-indigo-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Log at least <strong>3 entries</strong> to enable AI pattern detection.</span>
-          </div>
-        ) : (
-          <div className="bg-indigo-800/30 rounded-xl p-4 text-indigo-200 text-sm border border-indigo-700/30">
-            <p>Your history is ready for processing. Click the button above to generate insights.</p>
-          </div>
-        )}
-        
-        {error && (
-          <div className="mt-4 p-4 bg-rose-500/20 border border-rose-500/30 rounded-xl text-rose-100 text-sm flex items-start">
-             <svg className="w-5 h-5 mr-3 flex-shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-             </svg>
-             <div>
-               <p className="font-bold mb-1">Analysis Error</p>
-               <p>{error}</p>
-             </div>
-          </div>
-        )}
+        ) : !error ? (
+          entries.length < 3 ? (
+            <div className="bg-indigo-800/50 rounded-xl p-4 text-indigo-100 text-sm border border-indigo-700/50 flex items-center shadow-inner">
+              <svg className="w-5 h-5 mr-3 text-indigo-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Log at least <strong>3 entries</strong> to enable AI pattern detection.</span>
+            </div>
+          ) : (
+            <div className="bg-indigo-800/30 rounded-xl p-4 text-indigo-200 text-sm border border-indigo-700/30">
+              <p>Your history is ready for processing. Click the button above to generate insights.</p>
+            </div>
+          )
+        ) : null}
       </div>
     </div>
   );

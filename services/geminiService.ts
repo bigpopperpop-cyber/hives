@@ -68,6 +68,17 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     return JSON.parse(cleanJson) as AnalysisResult;
   } catch (e: any) {
     console.error("AI Analysis Error:", e);
-    throw new Error("The AI analysis service is temporarily unavailable. Please try again later.");
+    const message = e.message || "";
+    
+    // Categorizing errors for the UI
+    if (message.includes("429")) {
+      throw new Error("Rate limit exceeded. The AI service is currently busy.");
+    } else if (message.includes("401") || message.includes("403") || message.includes("API_KEY_INVALID")) {
+      throw new Error("Authentication failed. The API key may be invalid or expired.");
+    } else if (!navigator.onLine || message.includes("fetch failed")) {
+      throw new Error("Network error. Please check your internet connection.");
+    }
+    
+    throw new Error("The AI analysis service encountered an unexpected error. Please try again later.");
   }
 };
