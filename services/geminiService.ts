@@ -12,7 +12,8 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     };
   }
 
-  // The API key is obtained exclusively from the environment variable.
+  // The API key is obtained exclusively from the environment variable process.env.API_KEY.
+  // This is the secure, standard way to handle sensitive credentials in modern web apps.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const entriesSummary = entries.map(e => ({
@@ -70,15 +71,15 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     console.error("AI Analysis Error:", e);
     const message = e.message || "";
     
-    // Categorizing errors for the UI
+    // Determine the nature of the failure to provide better user guidance
     if (message.includes("429")) {
-      throw new Error("Rate limit exceeded. The AI service is currently busy.");
+      throw new Error("RATE_LIMIT: The AI service is currently busy. Please wait a moment and try again.");
     } else if (message.includes("401") || message.includes("403") || message.includes("API_KEY_INVALID")) {
-      throw new Error("Authentication failed. The API key may be invalid or expired.");
+      throw new Error("AUTH_ERROR: The API key provided in the system environment is invalid or expired.");
     } else if (!navigator.onLine || message.includes("fetch failed")) {
-      throw new Error("Network error. Please check your internet connection.");
+      throw new Error("NETWORK_ERROR: Unable to connect to the AI service. Please check your internet connection.");
     }
     
-    throw new Error("The AI analysis service encountered an unexpected error. Please try again later.");
+    throw new Error(`UNEXPECTED_ERROR: ${message || "An unknown error occurred during analysis."}`);
   }
 };

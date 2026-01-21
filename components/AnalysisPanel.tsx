@@ -26,11 +26,21 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
       setAnalysis(result);
       if (onAnalysisDone) onAnalysisDone(result);
     } catch (err: any) {
-      setError(err.message || "Failed to generate AI insights. Please try again.");
+      setError(err.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
   };
+
+  const getErrorType = () => {
+    if (!error) return null;
+    if (error.startsWith("AUTH_ERROR")) return "auth";
+    if (error.startsWith("NETWORK_ERROR")) return "network";
+    if (error.startsWith("RATE_LIMIT")) return "limit";
+    return "general";
+  };
+
+  const errorType = getErrorType();
 
   return (
     <div className="bg-indigo-900 text-white rounded-2xl shadow-xl p-8 overflow-hidden relative">
@@ -50,9 +60,11 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
                 </svg>
                 Smart Pattern Analysis
               </h2>
-              <div className="ml-3 flex items-center bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
-                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse mr-2"></span>
-                <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-widest">AI Service Online</span>
+              <div className={`ml-3 flex items-center px-2 py-0.5 rounded border ${error ? 'bg-rose-500/20 border-rose-500/30' : 'bg-emerald-500/20 border-emerald-500/30'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full mr-2 ${error ? 'bg-rose-400' : 'bg-emerald-400 animate-pulse'}`}></span>
+                <span className={`text-[10px] font-bold uppercase tracking-widest ${error ? 'text-rose-300' : 'text-emerald-300'}`}>
+                  {error ? 'Service Error' : 'AI Service Online'}
+                </span>
               </div>
             </div>
             <p className="text-indigo-200">
@@ -72,7 +84,7 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Crunching Data...
+                  Processing...
                 </>
               ) : (
                 <>
@@ -88,34 +100,53 @@ const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ entries, onAnalysisDone }
 
         {error && (
           <div className="mt-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl p-6 animate-in fade-in slide-in-from-top-4 duration-300">
-            <div className="flex items-start">
-              <div className="bg-rose-500/20 p-2 rounded-lg mr-4">
-                <svg className="w-6 h-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex flex-col md:flex-row md:items-start gap-6">
+              <div className="bg-rose-500/20 p-3 rounded-xl flex-shrink-0 self-start">
+                <svg className="w-8 h-8 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <div>
-                <h3 className="text-rose-100 font-bold text-lg mb-1">Analysis Encountered a Problem</h3>
-                <p className="text-rose-200/80 text-sm mb-4">{error}</p>
+              <div className="flex-1">
+                <h3 className="text-rose-100 font-bold text-xl mb-1">Analysis Stopped</h3>
+                <p className="text-rose-200/80 text-sm mb-6">
+                  {error.split(": ").slice(1).join(": ") || error}
+                </p>
                 
-                <div className="bg-black/20 rounded-xl p-4 border border-white/5">
-                  <p className="text-xs font-bold text-rose-300 uppercase tracking-widest mb-2">Troubleshooting Steps:</p>
-                  <ul className="text-xs text-rose-100/70 space-y-2">
-                    <li className="flex items-center">
-                      <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-2"></span>
-                      Verify your internet connection is stable.
+                <div className="bg-black/20 rounded-2xl p-6 border border-white/5 backdrop-blur-sm">
+                  <h4 className="text-xs font-bold text-rose-300 uppercase tracking-widest mb-4 flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Troubleshooting Steps
+                  </h4>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <li className={`flex items-start p-3 rounded-xl border transition-colors ${errorType === 'network' ? 'bg-rose-500/20 border-rose-400/50' : 'bg-white/5 border-white/5'}`}>
+                      <span className="w-5 h-5 bg-rose-500/30 text-rose-200 rounded-full flex items-center justify-center text-[10px] font-bold mr-3 mt-0.5 flex-shrink-0">1</span>
+                      <div>
+                        <p className="text-sm font-bold text-white mb-0.5">Check Connection</p>
+                        <p className="text-xs text-rose-100/60">Ensure your device has active internet access.</p>
+                      </div>
                     </li>
-                    <li className="flex items-center">
-                      <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-2"></span>
-                      Check if the API key in your environment is valid and has Gemini access.
+                    <li className={`flex items-start p-3 rounded-xl border transition-colors ${errorType === 'auth' ? 'bg-rose-500/20 border-rose-400/50' : 'bg-white/5 border-white/5'}`}>
+                      <span className="w-5 h-5 bg-rose-500/30 text-rose-200 rounded-full flex items-center justify-center text-[10px] font-bold mr-3 mt-0.5 flex-shrink-0">2</span>
+                      <div>
+                        <p className="text-sm font-bold text-white mb-0.5">Validate API Key</p>
+                        <p className="text-xs text-rose-100/60">Verify the environment variable is correctly set up.</p>
+                      </div>
                     </li>
-                    <li className="flex items-center">
-                      <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-2"></span>
-                      Wait 60 seconds if you've recently performed multiple analyses.
+                    <li className={`flex items-start p-3 rounded-xl border transition-colors ${errorType === 'limit' ? 'bg-rose-500/20 border-rose-400/50' : 'bg-white/5 border-white/5'}`}>
+                      <span className="w-5 h-5 bg-rose-500/30 text-rose-200 rounded-full flex items-center justify-center text-[10px] font-bold mr-3 mt-0.5 flex-shrink-0">3</span>
+                      <div>
+                        <p className="text-sm font-bold text-white mb-0.5">Wait 60 Seconds</p>
+                        <p className="text-xs text-rose-100/60">The service may be rate-limiting frequent requests.</p>
+                      </div>
                     </li>
-                    <li className="flex items-center">
-                      <span className="w-1.5 h-1.5 bg-rose-400 rounded-full mr-2"></span>
-                      Ensure your browser isn't blocking outgoing AI service requests.
+                    <li className="flex items-start p-3 bg-white/5 rounded-xl border border-white/5">
+                      <span className="w-5 h-5 bg-rose-500/30 text-rose-200 rounded-full flex items-center justify-center text-[10px] font-bold mr-3 mt-0.5 flex-shrink-0">4</span>
+                      <div>
+                        <p className="text-sm font-bold text-white mb-0.5">Review Logs</p>
+                        <p className="text-xs text-rose-100/60">Check the console for developer-specific error logs.</p>
+                      </div>
                     </li>
                   </ul>
                 </div>
