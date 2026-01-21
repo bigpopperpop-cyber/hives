@@ -12,7 +12,7 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     };
   }
 
-  // Use exact initialization as per guidelines
+  // Create a new instance right before the call to ensure the latest API key is used
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const entriesSummary = entries.map(e => ({
@@ -25,7 +25,7 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Upgraded for complex medical pattern reasoning
+      model: 'gemini-3-pro-preview',
       contents: [{
         parts: [{
           text: `Analyze these patient hive breakout logs. Identify recurring triggers, explain severity trends, find patterns between location and triggers, and provide supportive management advice.
@@ -64,12 +64,14 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     const text = response.text;
     if (!text) throw new Error("AI returned an empty response.");
 
-    // Clean potential markdown formatting if the model included it despite instructions
     const cleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    
     return JSON.parse(cleanJson) as AnalysisResult;
-  } catch (e) {
+  } catch (e: any) {
     console.error("AI Analysis Error Detail:", e);
+    // Propagate meaningful errors back to the UI
+    if (e.message?.includes("API_KEY_INVALID") || e.message?.includes("API key not found")) {
+        throw new Error("Invalid API key. Please select a key from a paid project with billing enabled.");
+    }
     throw e;
   }
 };
