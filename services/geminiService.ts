@@ -1,12 +1,24 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
 import { HiveEntry, AnalysisResult } from "../types";
 
 /**
- * Local Analysis Engine: Provides intelligent insights using on-device logic.
- * Ensures the app works perfectly even without an API key or internet.
+ * Local Intelligence Engine
+ * Analyzes hive data using advanced heuristic logic directly on the device.
+ * No API key, internet, or cloud processing required.
  */
-const runLocalHeuristicAnalysis = (entries: HiveEntry[]): AnalysisResult => {
+export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisResult> => {
+  // Simulate a brief calculation period for aesthetic "crunching" feel
+  await new Promise(resolve => setTimeout(resolve, 600));
+
+  if (entries.length === 0) {
+    return {
+      commonTriggers: [],
+      severityTrend: "No data logged.",
+      potentialPatterns: "No data logged.",
+      advice: "Log your first entry to see patterns."
+    };
+  }
+
   // 1. Trigger Frequency Analysis
   const triggerMap: Record<string, number> = {};
   entries.forEach(e => {
@@ -27,11 +39,11 @@ const runLocalHeuristicAnalysis = (entries: HiveEntry[]): AnalysisResult => {
   const startAvg = sorted.slice(0, mid).reduce((acc, curr) => acc + curr.severity, 0) / (mid || 1);
   const endAvg = sorted.slice(mid).reduce((acc, curr) => acc + curr.severity, 0) / (sorted.length - mid || 1);
 
-  let severityTrend = "Your breakout intensity has remained relatively consistent throughout your tracking period.";
-  if (endAvg > startAvg + 1.2) {
-    severityTrend = "We've detected a significant increase in recent severity levels. This may indicate a new or cumulative trigger exposure.";
-  } else if (endAvg < startAvg - 1.2) {
-    severityTrend = "Positive trend identified: Your most recent breakouts are showing lower intensity than earlier logs.";
+  let severityTrend = "Your breakout intensity has remained relatively stable throughout your tracking history.";
+  if (endAvg > startAvg + 1.0) {
+    severityTrend = "We have detected an upward trend in recent severity. This suggests a potential cumulative effect or a new environmental trigger.";
+  } else if (endAvg < startAvg - 1.0) {
+    severityTrend = "Great progress: Your most recent breakouts are significantly milder than your earlier logs.";
   }
 
   // 3. Body Area / Trigger Correlation
@@ -46,7 +58,7 @@ const runLocalHeuristicAnalysis = (entries: HiveEntry[]): AnalysisResult => {
     });
   });
 
-  let potentialPatterns = "Patterns often emerge over time. Currently, your breakouts appear to be distributed across multiple variables.";
+  let potentialPatterns = "Patterns are still emerging. As you add more logs, the engine will identify stronger correlations between your symptoms and triggers.";
   
   // Find strongest correlation
   let strongestLoc = "";
@@ -64,74 +76,22 @@ const runLocalHeuristicAnalysis = (entries: HiveEntry[]): AnalysisResult => {
   });
 
   if (maxCount >= 2) {
-    potentialPatterns = `Strong correlation found: Breakouts on your ${strongestLoc} frequently occur alongside exposure to ${strongestTrig}. Consider avoiding contact in this area.`;
+    potentialPatterns = `Significant Correlation: Breakouts on your ${strongestLoc} frequently occur after exposure to ${strongestTrig}. This pattern suggests a localized contact reaction.`;
+  }
+
+  // 4. Dynamic Management Advice
+  let advice = "Continue tracking your breakouts daily. Consistent logging is the most effective tool for managing chronic urticaria.";
+  if (entries.length > 10) {
+    advice = "With 10+ entries logged, your report is now highly detailed. We recommend showing the 'Export PDF' report to your doctor at your next visit.";
+  }
+  if (endAvg > 7) {
+    advice = "Your recent severity levels are high. If antihistamines are not providing relief, discuss omalizumab or other specialty treatments with your physician.";
   }
 
   return {
     commonTriggers,
     severityTrend,
     potentialPatterns,
-    advice: "Maintain consistent logging. For hives lasting more than 6 weeks, bring this report to an immunologist to discuss Chronic Spontaneous Urticaria (CSU)."
+    advice
   };
-};
-
-export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisResult> => {
-  if (entries.length === 0) {
-    return {
-      commonTriggers: [],
-      severityTrend: "No data logged.",
-      potentialPatterns: "No data logged.",
-      advice: "Log your first entry to see patterns."
-    };
-  }
-
-  // If no API key is available, go straight to local mode
-  const hasApiKey = process.env.API_KEY && process.env.API_KEY !== "undefined" && process.env.API_KEY.length > 10;
-  
-  if (!hasApiKey) {
-    console.info("Smart Analysis: Using Local Engine (No Key Detected)");
-    return runLocalHeuristicAnalysis(entries);
-  }
-
-  try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    // Only send relevant summary to save tokens and improve response speed
-    const context = entries.slice(0, 20).map(e => ({
-      date: e.timestamp,
-      sev: e.severity,
-      loc: e.location.join(','),
-      trig: e.triggers
-    }));
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: [{
-        parts: [{
-          text: `Analyze these patient hive logs and identify patterns. Return ONLY JSON. 
-          Logs: ${JSON.stringify(context)}`
-        }]
-      }],
-      config: {
-        systemInstruction: "You are a dermatology medical analyst. Provide objective insights based strictly on the provided JSON data. Response must be valid JSON.",
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            commonTriggers: { type: Type.ARRAY, items: { type: Type.STRING } },
-            severityTrend: { type: Type.STRING },
-            potentialPatterns: { type: Type.STRING },
-            advice: { type: Type.STRING }
-          },
-          required: ["commonTriggers", "severityTrend", "potentialPatterns", "advice"]
-        }
-      }
-    });
-
-    const result = JSON.parse(response.text.trim());
-    return result as AnalysisResult;
-  } catch (error) {
-    console.warn("AI Analysis failed or timed out. Falling back to local engine.", error);
-    return runLocalHeuristicAnalysis(entries);
-  }
 };
