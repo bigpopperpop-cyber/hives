@@ -1,16 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BodyArea, HiveEntry } from '../types';
-import { BODY_AREAS } from '../constants';
+import { BODY_AREAS, DEFAULT_COMMON_TRIGGERS, CUSTOM_TRIGGERS_KEY } from '../constants';
 
 interface HiveFormProps {
   onAdd: (entry: HiveEntry) => void;
 }
-
-const COMMON_TRIGGERS = [
-  'Stress', 'Heat', 'Cold', 'Dairy', 'Seafood', 'Alcohol', 
-  'Detergent', 'Sweat', 'Pressure', 'Medication'
-];
 
 const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
   const [severity, setSeverity] = useState(5);
@@ -18,6 +13,30 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
   const [triggers, setTriggers] = useState('');
   const [notes, setNotes] = useState('');
   const [timestamp, setTimestamp] = useState(new Date().toISOString().slice(0, 16));
+  
+  // Custom Triggers State
+  const [suggestionList, setSuggestionList] = useState<string[]>([]);
+  const [isEditingSuggestions, setIsEditingSuggestions] = useState(false);
+
+  // Load suggestions on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(CUSTOM_TRIGGERS_KEY);
+    if (saved) {
+      try {
+        setSuggestionList(JSON.parse(saved));
+      } catch (e) {
+        setSuggestionList(DEFAULT_COMMON_TRIGGERS);
+      }
+    } else {
+      setSuggestionList(DEFAULT_COMMON_TRIGGERS);
+    }
+  }, []);
+
+  // Save suggestions when changed
+  const saveSuggestions = (newList: string[]) => {
+    setSuggestionList(newList);
+    localStorage.setItem(CUSTOM_TRIGGERS_KEY, JSON.stringify(newList));
+  };
 
   const toggleLocation = (area: BodyArea) => {
     setSelectedLocations(prev => 
@@ -27,13 +46,34 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
     );
   };
 
-  const addTriggerChip = (chip: string) => {
+  const addTriggerToInput = (chip: string) => {
     setTriggers(prev => {
       const current = prev.trim();
       if (!current) return chip;
-      if (current.toLowerCase().includes(chip.toLowerCase())) return prev;
+      // Check if already in input
+      const parts = current.split(',').map(p => p.trim().toLowerCase());
+      if (parts.includes(chip.toLowerCase())) return prev;
       return `${current}, ${chip}`;
     });
+  };
+
+  const addNewSuggestion = () => {
+    const newTrig = triggers.split(',').pop()?.trim();
+    if (!newTrig) return;
+    
+    if (suggestionList.some(s => s.toLowerCase() === newTrig.toLowerCase())) {
+      alert("This trigger is already in your suggestion list.");
+      return;
+    }
+
+    const updated = [...suggestionList, newTrig];
+    saveSuggestions(updated);
+  };
+
+  const removeSuggestion = (e: React.MouseEvent, chipToRemove: string) => {
+    e.stopPropagation(); // Don't add to input if we are deleting
+    const updated = suggestionList.filter(s => s !== chipToRemove);
+    saveSuggestions(updated);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,7 +91,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
       notes
     };
     onAdd(newEntry);
-    // Reset
+    // Reset form fields but keep suggestions
     setTriggers('');
     setNotes('');
     setSelectedLocations(['Torso']);
@@ -127,25 +167,62 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">Suspected Triggers</label>
-          <input
-            type="text"
-            value={triggers}
-            onChange={(e) => setTriggers(e.target.value)}
-            placeholder="e.g. Seafood, New laundry detergent..."
-            className="w-full rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500 text-sm mb-3"
-          />
-          <div className="flex flex-wrap gap-1.5">
-            {COMMON_TRIGGERS.map(chip => (
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium text-slate-600">Suspected Triggers</label>
+            <button 
+              type="button" 
+              onClick={() => setIsEditingSuggestions(!isEditingSuggestions)}
+              className="text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-tight flex items-center"
+            >
+              {isEditingSuggestions ? 'Done Editing' : 'Customize List'}
+              <svg className={`ml-1 w-3 h-3 transition-transform ${isEditingSuggestions ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+          </div>
+          
+          <div className="flex space-x-2 mb-3">
+            <input
+              type="text"
+              value={triggers}
+              onChange={(e) => setTriggers(e.target.value)}
+              placeholder="e.g. Seafood, Stress..."
+              className="flex-grow rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500 text-sm"
+            />
+            {triggers && (
               <button
-                key={chip}
                 type="button"
-                onClick={() => addTriggerChip(chip)}
-                className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded-md hover:bg-slate-200 hover:text-slate-700 transition-colors"
+                onClick={addNewSuggestion}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 rounded-xl text-[10px] font-black uppercase tracking-tight border border-slate-200"
+                title="Save this as a permanent shortcut"
               >
-                + {chip}
+                Add Shortcut
               </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 min-h-[40px]">
+            {suggestionList.map(chip => (
+              <div
+                key={chip}
+                onClick={() => addTriggerToInput(chip)}
+                className="group relative flex items-center bg-slate-100 text-slate-500 px-2.5 py-1.5 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition-all cursor-pointer border border-transparent hover:border-rose-200"
+              >
+                <span className="text-[11px] font-bold">+ {chip}</span>
+                {isEditingSuggestions && (
+                  <button
+                    type="button"
+                    onClick={(e) => removeSuggestion(e, chip)}
+                    className="ml-2 -mr-1 p-0.5 bg-slate-200 text-slate-500 rounded-full hover:bg-rose-500 hover:text-white transition-colors"
+                  >
+                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             ))}
+            {suggestionList.length === 0 && (
+              <p className="text-[11px] text-slate-400 italic py-2">No shortcuts yet. Type a trigger and click 'Add Shortcut'.</p>
+            )}
           </div>
         </div>
 

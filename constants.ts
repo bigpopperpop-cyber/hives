@@ -20,3 +20,9 @@ export const SEVERITY_COLORS = {
 };
 
 export const STORAGE_KEY = 'hive_tracker_entries';
+export const CUSTOM_TRIGGERS_KEY = 'hive_tracker_custom_triggers';
+
+export const DEFAULT_COMMON_TRIGGERS = [
+  'Stress', 'Heat', 'Cold', 'Dairy', 'Seafood', 'Alcohol', 
+  'Detergent', 'Sweat', 'Pressure', 'Medication'
+];
