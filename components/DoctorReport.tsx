@@ -77,7 +77,7 @@ const DoctorReport: React.FC<DoctorReportProps> = ({ entries, analysis }) => {
             <tr className="bg-slate-100">
               <th className="p-2 border border-slate-200 text-xs font-bold uppercase">Date/Time</th>
               <th className="p-2 border border-slate-200 text-xs font-bold uppercase w-16">Sev.</th>
-              <th className="p-2 border border-slate-200 text-xs font-bold uppercase">Affected Areas</th>
+              <th className="p-2 border border-slate-200 text-xs font-bold uppercase">Visual/Location</th>
               <th className="p-2 border border-slate-200 text-xs font-bold uppercase">Triggers/Notes</th>
             </tr>
           </thead>
@@ -91,7 +91,10 @@ const DoctorReport: React.FC<DoctorReportProps> = ({ entries, analysis }) => {
                   {entry.severity}
                 </td>
                 <td className="p-2 border border-slate-200 text-sm">
-                  {entry.location.join(', ')}
+                  <div className="flex items-start space-x-2">
+                    {entry.image && <img src={entry.image} className="w-12 h-12 rounded object-cover border" alt="Visual" />}
+                    <span>{entry.location.join(', ')}</span>
+                  </div>
                 </td>
                 <td className="p-2 border border-slate-200 text-sm">
                   <span className="font-semibold">{entry.triggers}</span>

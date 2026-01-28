@@ -1,5 +1,7 @@
 {
   "name": "HiveTracker Pro",
   "description": "A comprehensive tracking and analysis tool for chronic hives (urticaria), featuring visual severity charts, body location heatmaps, and AI-powered trigger analysis.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }

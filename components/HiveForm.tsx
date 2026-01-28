@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BodyArea, HiveEntry } from '../types';
 import { DEFAULT_BODY_AREAS, DEFAULT_COMMON_TRIGGERS, CUSTOM_TRIGGERS_KEY, CUSTOM_BODY_AREAS_KEY } from '../constants';
 
@@ -12,7 +12,9 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
   const [selectedLocations, setSelectedLocations] = useState<BodyArea[]>([]);
   const [triggers, setTriggers] = useState('');
   const [notes, setNotes] = useState('');
+  const [image, setImage] = useState<string | undefined>(undefined);
   const [timestamp, setTimestamp] = useState(new Date().toISOString().slice(0, 16));
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Custom Triggers State
   const [suggestionList, setSuggestionList] = useState<string[]>([]);
@@ -23,9 +25,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
   const [isEditingAreas, setIsEditingAreas] = useState(false);
   const [newAreaInput, setNewAreaInput] = useState('');
 
-  // Load customizations on mount
   useEffect(() => {
-    // Load Triggers
     const savedTriggers = localStorage.getItem(CUSTOM_TRIGGERS_KEY);
     if (savedTriggers) {
       try { setSuggestionList(JSON.parse(savedTriggers)); } 
@@ -34,7 +34,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
       setSuggestionList(DEFAULT_COMMON_TRIGGERS);
     }
 
-    // Load Body Areas
     const savedAreas = localStorage.getItem(CUSTOM_BODY_AREAS_KEY);
     if (savedAreas) {
       try { setAreaList(JSON.parse(savedAreas)); }
@@ -44,7 +43,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
     }
   }, []);
 
-  // Persistence helpers
   const saveSuggestions = (newList: string[]) => {
     setSuggestionList(newList);
     localStorage.setItem(CUSTOM_TRIGGERS_KEY, JSON.stringify(newList));
@@ -61,6 +59,46 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
         ? prev.filter(a => a !== area) 
         : [...prev, area]
     );
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 500;
+        const MAX_HEIGHT = 500;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Compress to JPEG 60% quality
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        setImage(dataUrl);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const addTriggerToInput = (chip: string) => {
@@ -114,11 +152,13 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
       severity,
       location: selectedLocations,
       triggers,
-      notes
+      notes,
+      image
     };
     onAdd(newEntry);
     setTriggers('');
     setNotes('');
+    setImage(undefined);
     setSelectedLocations([]);
   };
 
@@ -144,8 +184,32 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
               required
             />
           </div>
-          <div className="flex items-end">
-             <p className="text-xs text-slate-400 italic mb-1">Log as specifically as possible.</p>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Evidence Photo</label>
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2.5 rounded-xl border border-slate-200 transition-colors"
+                title="Add photo"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              </button>
+              {image && (
+                <div className="relative">
+                  <img src={image} className="w-10 h-10 rounded-lg object-cover border border-rose-200" alt="Preview" />
+                  <button
+                    type="button"
+                    onClick={() => setImage(undefined)}
+                    className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 shadow-sm"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+              )}
+              <p className="text-[10px] text-slate-400 leading-tight">Photos are automatically optimized to save space.</p>
+            </div>
+            <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" capture="environment" />
           </div>
         </div>
 
@@ -212,11 +276,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
               );
             })}
           </div>
-          {areaList.length === 0 && (
-            <p className="text-xs text-slate-400 italic text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-              Your area list is empty. Add some body parts!
-            </p>
-          )}
         </div>
 
         <div>

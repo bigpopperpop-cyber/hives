@@ -216,7 +216,7 @@ const App: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {entries.map(entry => (
-                    <div key={entry.id} className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow group relative">
+                    <div key={entry.id} className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow group relative flex flex-col">
                       <div className="flex justify-between items-start mb-3">
                         <div className="bg-slate-100 text-slate-600 text-[10px] font-bold uppercase px-2 py-1 rounded">
                           {new Date(entry.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -228,6 +228,12 @@ const App: React.FC = () => {
                         </div>
                       </div>
                       
+                      {entry.image && (
+                        <div className="mb-4 rounded-lg overflow-hidden border border-slate-100 aspect-video">
+                          <img src={entry.image} alt="Hive Breakout" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+
                       <div className="mb-4">
                         <p className="text-xs font-bold text-slate-400 uppercase mb-1">Affected Areas</p>
                         <div className="flex flex-wrap gap-1">
@@ -245,7 +251,7 @@ const App: React.FC = () => {
                       </div>
 
                       {entry.notes && (
-                        <div className="bg-slate-50 p-3 rounded-lg text-xs text-slate-500 mb-2 line-clamp-2">
+                        <div className="bg-slate-50 p-3 rounded-lg text-xs text-slate-500 mb-6 line-clamp-2">
                           {entry.notes}
                         </div>
                       )}
