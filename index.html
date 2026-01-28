@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>HiveTracker Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,7 +13,20 @@
       body {
         font-family: 'Inter', sans-serif;
         background-color: #f8fafc;
+        /* Prevent elastic scrolling on iOS which can mess up custom headers */
+        overscroll-behavior-y: none;
       }
+      
+      /* Mobile Landscape Optimizations */
+      @media (max-height: 500px) and (orientation: landscape) {
+        .landscape-compact-p { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+        .landscape-compact-m { margin-top: 0.25rem !important; margin-bottom: 0.25rem !important; }
+        .landscape-hide { display: none !important; }
+        .landscape-text-xs { font-size: 0.7rem !important; }
+        header { height: 3rem !important; }
+        .mobile-nav { height: 3.5rem !important; }
+      }
+
       @media print {
         body { 
           background-color: white !important;
