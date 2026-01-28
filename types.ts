@@ -1,14 +1,5 @@
 
-export type BodyArea = 
-  | 'Head' 
-  | 'Neck' 
-  | 'Shoulder' 
-  | 'Arm' 
-  | 'Torso' 
-  | 'Chest' 
-  | 'Legs' 
-  | 'Feet' 
-  | 'Thighs';
+export type BodyArea = string;
 
 export interface HiveEntry {
   id: string;

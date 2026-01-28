@@ -1,7 +1,7 @@
 
 import { BodyArea } from './types';
 
-export const BODY_AREAS: BodyArea[] = [
+export const DEFAULT_BODY_AREAS: BodyArea[] = [
   'Head',
   'Neck',
   'Shoulder',
@@ -21,6 +21,7 @@ export const SEVERITY_COLORS = {
 
 export const STORAGE_KEY = 'hive_tracker_entries';
 export const CUSTOM_TRIGGERS_KEY = 'hive_tracker_custom_triggers';
+export const CUSTOM_BODY_AREAS_KEY = 'hive_tracker_custom_body_areas';
 
 export const DEFAULT_COMMON_TRIGGERS = [
   'Stress', 'Heat', 'Cold', 'Dairy', 'Seafood', 'Alcohol', 

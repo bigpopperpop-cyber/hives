@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BodyArea, HiveEntry } from '../types';
-import { BODY_AREAS, DEFAULT_COMMON_TRIGGERS, CUSTOM_TRIGGERS_KEY } from '../constants';
+import { DEFAULT_BODY_AREAS, DEFAULT_COMMON_TRIGGERS, CUSTOM_TRIGGERS_KEY, CUSTOM_BODY_AREAS_KEY } from '../constants';
 
 interface HiveFormProps {
   onAdd: (entry: HiveEntry) => void;
@@ -9,7 +9,7 @@ interface HiveFormProps {
 
 const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
   const [severity, setSeverity] = useState(5);
-  const [selectedLocations, setSelectedLocations] = useState<BodyArea[]>(['Torso']);
+  const [selectedLocations, setSelectedLocations] = useState<BodyArea[]>([]);
   const [triggers, setTriggers] = useState('');
   const [notes, setNotes] = useState('');
   const [timestamp, setTimestamp] = useState(new Date().toISOString().slice(0, 16));
@@ -18,24 +18,41 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
   const [suggestionList, setSuggestionList] = useState<string[]>([]);
   const [isEditingSuggestions, setIsEditingSuggestions] = useState(false);
 
-  // Load suggestions on mount
+  // Custom Body Areas State
+  const [areaList, setAreaList] = useState<BodyArea[]>([]);
+  const [isEditingAreas, setIsEditingAreas] = useState(false);
+  const [newAreaInput, setNewAreaInput] = useState('');
+
+  // Load customizations on mount
   useEffect(() => {
-    const saved = localStorage.getItem(CUSTOM_TRIGGERS_KEY);
-    if (saved) {
-      try {
-        setSuggestionList(JSON.parse(saved));
-      } catch (e) {
-        setSuggestionList(DEFAULT_COMMON_TRIGGERS);
-      }
+    // Load Triggers
+    const savedTriggers = localStorage.getItem(CUSTOM_TRIGGERS_KEY);
+    if (savedTriggers) {
+      try { setSuggestionList(JSON.parse(savedTriggers)); } 
+      catch (e) { setSuggestionList(DEFAULT_COMMON_TRIGGERS); }
     } else {
       setSuggestionList(DEFAULT_COMMON_TRIGGERS);
     }
+
+    // Load Body Areas
+    const savedAreas = localStorage.getItem(CUSTOM_BODY_AREAS_KEY);
+    if (savedAreas) {
+      try { setAreaList(JSON.parse(savedAreas)); }
+      catch (e) { setAreaList(DEFAULT_BODY_AREAS); }
+    } else {
+      setAreaList(DEFAULT_BODY_AREAS);
+    }
   }, []);
 
-  // Save suggestions when changed
+  // Persistence helpers
   const saveSuggestions = (newList: string[]) => {
     setSuggestionList(newList);
     localStorage.setItem(CUSTOM_TRIGGERS_KEY, JSON.stringify(newList));
+  };
+
+  const saveAreas = (newList: BodyArea[]) => {
+    setAreaList(newList);
+    localStorage.setItem(CUSTOM_BODY_AREAS_KEY, JSON.stringify(newList));
   };
 
   const toggleLocation = (area: BodyArea) => {
@@ -50,7 +67,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
     setTriggers(prev => {
       const current = prev.trim();
       if (!current) return chip;
-      // Check if already in input
       const parts = current.split(',').map(p => p.trim().toLowerCase());
       if (parts.includes(chip.toLowerCase())) return prev;
       return `${current}, ${chip}`;
@@ -60,20 +76,30 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
   const addNewSuggestion = () => {
     const newTrig = triggers.split(',').pop()?.trim();
     if (!newTrig) return;
-    
-    if (suggestionList.some(s => s.toLowerCase() === newTrig.toLowerCase())) {
-      alert("This trigger is already in your suggestion list.");
-      return;
-    }
-
-    const updated = [...suggestionList, newTrig];
-    saveSuggestions(updated);
+    if (suggestionList.some(s => s.toLowerCase() === newTrig.toLowerCase())) return;
+    saveSuggestions([...suggestionList, newTrig]);
   };
 
   const removeSuggestion = (e: React.MouseEvent, chipToRemove: string) => {
-    e.stopPropagation(); // Don't add to input if we are deleting
-    const updated = suggestionList.filter(s => s !== chipToRemove);
-    saveSuggestions(updated);
+    e.stopPropagation();
+    saveSuggestions(suggestionList.filter(s => s !== chipToRemove));
+  };
+
+  const addNewArea = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAreaInput.trim()) return;
+    if (areaList.some(a => a.toLowerCase() === newAreaInput.trim().toLowerCase())) {
+      setNewAreaInput('');
+      return;
+    }
+    saveAreas([...areaList, newAreaInput.trim()]);
+    setNewAreaInput('');
+  };
+
+  const removeArea = (e: React.MouseEvent, areaToRemove: BodyArea) => {
+    e.stopPropagation();
+    saveAreas(areaList.filter(a => a !== areaToRemove));
+    setSelectedLocations(prev => prev.filter(a => a !== areaToRemove));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -91,10 +117,9 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
       notes
     };
     onAdd(newEntry);
-    // Reset form fields but keep suggestions
     setTriggers('');
     setNotes('');
-    setSelectedLocations(['Torso']);
+    setSelectedLocations([]);
   };
 
   return (
@@ -120,31 +145,78 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
             />
           </div>
           <div className="flex items-end">
-             <p className="text-xs text-slate-400 italic mb-1">Select all affected areas.</p>
+             <p className="text-xs text-slate-400 italic mb-1">Log as specifically as possible.</p>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-2">Affected Areas</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-slate-600">Affected Areas</label>
+            <button 
+              type="button" 
+              onClick={() => setIsEditingAreas(!isEditingAreas)}
+              className="text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-tight flex items-center"
+            >
+              {isEditingAreas ? 'Done Customizing' : 'Customize Areas'}
+              <svg className={`ml-1 w-3 h-3 transition-transform ${isEditingAreas ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+          </div>
+
+          {isEditingAreas && (
+            <div className="mb-4 animate-in slide-in-from-top-2 duration-200">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={newAreaInput}
+                  onChange={(e) => setNewAreaInput(e.target.value)}
+                  placeholder="New area (e.g. Left Eyelid)"
+                  className="flex-grow rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={addNewArea}
+                  className="bg-slate-800 text-white px-4 rounded-xl text-xs font-bold"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-2">
-            {BODY_AREAS.map(area => {
+            {areaList.map(area => {
               const isSelected = selectedLocations.includes(area);
               return (
-                <button
-                  key={area}
-                  type="button"
-                  onClick={() => toggleLocation(area)}
-                  className={`py-2.5 px-2 rounded-xl text-[11px] font-bold border transition-all ${
-                    isSelected 
-                      ? 'bg-rose-500 border-rose-500 text-white shadow-sm' 
-                      : 'bg-white border-slate-200 text-slate-500 hover:border-rose-300'
-                  }`}
-                >
-                  {area}
-                </button>
+                <div key={area} className="relative group">
+                  <button
+                    type="button"
+                    onClick={() => toggleLocation(area)}
+                    className={`w-full py-2.5 px-2 rounded-xl text-[11px] font-bold border transition-all ${
+                      isSelected 
+                        ? 'bg-rose-500 border-rose-500 text-white shadow-sm' 
+                        : 'bg-white border-slate-200 text-slate-500 hover:border-rose-300'
+                    }`}
+                  >
+                    {area}
+                  </button>
+                  {isEditingAreas && (
+                    <button
+                      type="button"
+                      onClick={(e) => removeArea(e, area)}
+                      className="absolute -top-1 -right-1 bg-slate-900 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition-colors"
+                    >
+                      <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
+          {areaList.length === 0 && (
+            <p className="text-xs text-slate-400 italic text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              Your area list is empty. Add some body parts!
+            </p>
+          )}
         </div>
 
         <div>
@@ -174,7 +246,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
               onClick={() => setIsEditingSuggestions(!isEditingSuggestions)}
               className="text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-tight flex items-center"
             >
-              {isEditingSuggestions ? 'Done Editing' : 'Customize List'}
+              {isEditingSuggestions ? 'Done Customizing' : 'Customize List'}
               <svg className={`ml-1 w-3 h-3 transition-transform ${isEditingSuggestions ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
           </div>
@@ -192,7 +264,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
                 type="button"
                 onClick={addNewSuggestion}
                 className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 rounded-xl text-[10px] font-black uppercase tracking-tight border border-slate-200"
-                title="Save this as a permanent shortcut"
               >
                 Add Shortcut
               </button>
@@ -220,9 +291,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
                 )}
               </div>
             ))}
-            {suggestionList.length === 0 && (
-              <p className="text-[11px] text-slate-400 italic py-2">No shortcuts yet. Type a trigger and click 'Add Shortcut'.</p>
-            )}
           </div>
         </div>
 
