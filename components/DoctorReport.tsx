@@ -29,7 +29,7 @@ const DoctorReport: React.FC<DoctorReportProps> = ({ entries, analysis }) => {
       <div className="border-b-2 border-slate-900 pb-6 mb-8 flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-bold uppercase tracking-tight">Chronic Urticaria Patient Report</h1>
-          <p className="text-slate-500 font-medium">Generated on {new Date().toLocaleDateString()} via HiveTracker Pro</p>
+          <p className="text-slate-500 font-medium">Generated on {new Date().toLocaleDateString()} via I Am Itchy</p>
         </div>
         <div className="text-right">
           <p className="text-sm font-bold">Confidential Health Data</p>
@@ -91,9 +91,15 @@ const DoctorReport: React.FC<DoctorReportProps> = ({ entries, analysis }) => {
                   {entry.severity}
                 </td>
                 <td className="p-2 border border-slate-200 text-sm">
-                  <div className="flex items-start space-x-2">
-                    {entry.image && <img src={entry.image} className="w-12 h-12 rounded object-cover border" alt="Visual" />}
+                  <div className="flex flex-col space-y-2">
                     <span>{entry.location.join(', ')}</span>
+                    {entry.images && entry.images.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {entry.images.map((img, i) => (
+                           <img key={i} src={img} className="w-16 h-16 rounded object-cover border" alt="Visual" />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </td>
                 <td className="p-2 border border-slate-200 text-sm">
@@ -107,7 +113,7 @@ const DoctorReport: React.FC<DoctorReportProps> = ({ entries, analysis }) => {
       </div>
 
       <div className="mt-12 pt-8 border-t border-slate-200 text-center text-xs text-slate-400 italic">
-        This report was created by the patient using HiveTracker Pro. It is intended to assist medical professionals in identifying urticaria patterns and is not a clinical diagnosis.
+        This report was created by the patient using I Am Itchy. It is intended to assist medical professionals in identifying urticaria patterns and is not a clinical diagnosis.
       </div>
     </div>
   );

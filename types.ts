@@ -8,7 +8,7 @@ export interface HiveEntry {
   location: BodyArea[];
   triggers: string;
   notes?: string;
-  image?: string; // Base64 optimized string
+  images?: string[]; // Multiple Base64 optimized strings
 }
 
 export interface AnalysisResult {

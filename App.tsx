@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import HiveForm from './components/HiveForm';
 import HistoryCharts from './components/HistoryCharts';
@@ -224,9 +225,13 @@ const App: React.FC = () => {
                         </div>
                       </div>
                       
-                      {entry.image && (
-                        <div className="mb-2 rounded-lg overflow-hidden border border-slate-100 aspect-video max-h-[100px]">
-                          <img src={entry.image} alt="Visual" className="w-full h-full object-cover" />
+                      {entry.images && entry.images.length > 0 && (
+                        <div className="mb-2 rounded-lg overflow-x-auto flex space-x-2 pb-2 scrollbar-hide">
+                          {entry.images.map((img, i) => (
+                            <div key={i} className="flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-slate-100">
+                               <img src={img} alt={`Visual ${i}`} className="w-full h-full object-cover" />
+                            </div>
+                          ))}
                         </div>
                       )}
 

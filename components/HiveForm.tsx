@@ -12,9 +12,11 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
   const [selectedLocations, setSelectedLocations] = useState<BodyArea[]>([]);
   const [triggers, setTriggers] = useState('');
   const [notes, setNotes] = useState('');
-  const [image, setImage] = useState<string | undefined>(undefined);
+  const [images, setImages] = useState<string[]>([]);
   const [timestamp, setTimestamp] = useState(new Date().toISOString().slice(0, 16));
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
   
   const [suggestionList, setSuggestionList] = useState<string[]>([]);
   const [isEditingSuggestions, setIsEditingSuggestions] = useState(false);
@@ -58,42 +60,62 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
     );
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 500;
-        const MAX_HEIGHT = 500;
-        let width = img.width;
-        let height = img.height;
+    const newCompressedImages: string[] = [];
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
+    for (const file of files) {
+      const compressed = await compressFile(file);
+      newCompressedImages.push(compressed);
+    }
+
+    setImages(prev => [...prev, ...newCompressedImages]);
+    
+    // Clear inputs to allow re-selection of same file if needed
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    if (libraryInputRef.current) libraryInputRef.current.value = '';
+  };
+
+  const compressFile = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 500;
+          const MAX_HEIGHT = 500;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
           }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        setImage(dataUrl);
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.6));
+        };
+        img.src = event.target?.result as string;
       };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const addTriggerToInput = (chip: string) => {
@@ -148,12 +170,12 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
       location: selectedLocations,
       triggers,
       notes,
-      image
+      images: images.length > 0 ? images : undefined
     };
     onAdd(newEntry);
     setTriggers('');
     setNotes('');
-    setImage(undefined);
+    setImages([]);
     setSelectedLocations([]);
   };
 
@@ -171,7 +193,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-4">
-            {/* Top Row: Date & Photo */}
+            {/* Top Row: Date & Photos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Date & Time</label>
@@ -184,28 +206,69 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
                 />
               </div>
               <div>
-                <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Evidence Photo</label>
-                <div className="flex items-center space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-xl border border-slate-200 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  </button>
-                  {image && (
-                    <div className="relative">
-                      <img src={image} className="w-9 h-9 md:w-10 md:h-10 rounded-lg object-cover border border-rose-200" alt="Preview" />
-                      <button type="button" onClick={() => setImage(undefined)} className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="3" /></svg></button>
-                    </div>
-                  )}
-                  {!image && <p className="text-[9px] md:text-[10px] text-slate-400 leading-tight">Optional</p>}
+                <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Add Photos</label>
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center space-x-2">
+                    {/* Camera Button */}
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="flex-1 bg-slate-900 text-white p-2 rounded-xl border border-slate-800 transition-all flex items-center justify-center space-x-2 hover:bg-slate-800 active:scale-95"
+                      title="Take Photo"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Camera</span>
+                    </button>
+                    
+                    {/* Gallery Button */}
+                    <button
+                      type="button"
+                      onClick={() => libraryInputRef.current?.click()}
+                      className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl border border-slate-200 transition-all flex items-center justify-center space-x-2 active:scale-95"
+                      title="Upload from Gallery"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h14a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Gallery</span>
+                    </button>
+                  </div>
+
+                  {/* Image Previews */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {images.map((img, idx) => (
+                      <div key={idx} className="relative group/img">
+                        <img src={img} className="w-10 h-10 rounded-lg object-cover border border-rose-200" alt="Preview" />
+                        <button 
+                          type="button" 
+                          onClick={() => removeImage(idx)} 
+                          className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 shadow-sm"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="4" /></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" capture="environment" />
+
+                {/* Hidden File Inputs */}
+                <input 
+                  type="file" 
+                  ref={cameraInputRef} 
+                  onChange={handleImageUpload} 
+                  accept="image/*" 
+                  capture="environment" 
+                  className="hidden" 
+                />
+                <input 
+                  type="file" 
+                  ref={libraryInputRef} 
+                  onChange={handleImageUpload} 
+                  accept="image/*" 
+                  multiple 
+                  className="hidden" 
+                />
               </div>
             </div>
 
-            {/* Severity Slider */}
             <div className="bg-slate-50 p-3 md:p-4 rounded-2xl border border-slate-100">
               <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-2">
                 Severity (Itchiness: {severity}/10)
@@ -222,7 +285,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
               </div>
             </div>
 
-            {/* Notes */}
             <div>
               <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Notes</label>
               <textarea
@@ -236,7 +298,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
           </div>
 
           <div className="space-y-4">
-            {/* Affected Areas Section */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight">Areas</label>
@@ -279,7 +340,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
               </div>
             </div>
 
-            {/* Triggers Section */}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight">Triggers</label>
