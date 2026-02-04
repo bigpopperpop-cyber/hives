@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import HiveForm from './components/HiveForm';
 import HistoryCharts from './components/HistoryCharts';
@@ -77,7 +76,7 @@ const App: React.FC = () => {
               </svg>
             </div>
             <div>
-              <h1 className="text-sm md:text-lg font-bold text-slate-900 leading-none">HiveTracker Pro</h1>
+              <h1 className="text-sm md:text-lg font-bold text-slate-900 leading-none">I Am Itchy</h1>
               <div className="flex items-center mt-0.5 md:mt-1 landscape-hide">
                 <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse mr-1"></span>
                 <span className="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-wider">Local Only</span>
@@ -270,7 +269,7 @@ const App: React.FC = () => {
       <footer className="no-print bg-white border-t border-slate-200 py-4 px-4 text-center mt-auto landscape-hide">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-[10px] md:text-sm text-slate-400 font-medium">
-            &copy; {new Date().getFullYear()} HiveTracker Pro • Private
+            &copy; {new Date().getFullYear()} I Am Itchy • Private
           </div>
           <div className="flex items-center space-x-4">
             <a href={paypalUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 font-bold text-[10px] md:text-xs flex items-center space-x-1.5 bg-amber-50 px-2 py-1 rounded-lg">
