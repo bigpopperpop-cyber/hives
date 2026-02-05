@@ -1,19 +1,24 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { BodyArea, HiveEntry } from '../types';
 import { DEFAULT_BODY_AREAS, DEFAULT_COMMON_TRIGGERS, CUSTOM_TRIGGERS_KEY, CUSTOM_BODY_AREAS_KEY } from '../constants';
 
 interface HiveFormProps {
   onAdd: (entry: HiveEntry) => void;
+  initialData?: HiveEntry;
+  onCancel?: () => void;
 }
 
-const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
-  const [severity, setSeverity] = useState(5);
-  const [selectedLocations, setSelectedLocations] = useState<BodyArea[]>([]);
-  const [triggers, setTriggers] = useState('');
-  const [notes, setNotes] = useState('');
-  const [images, setImages] = useState<string[]>([]);
-  const [timestamp, setTimestamp] = useState(new Date().toISOString().slice(0, 16));
+const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => {
+  const [severity, setSeverity] = useState(initialData?.severity ?? 5);
+  const [selectedLocations, setSelectedLocations] = useState<BodyArea[]>(initialData?.location ?? []);
+  const [triggers, setTriggers] = useState(initialData?.triggers ?? '');
+  const [notes, setNotes] = useState(initialData?.notes ?? '');
+  const [images, setImages] = useState<string[]>(initialData?.images ?? []);
+  const [timestamp, setTimestamp] = useState(
+    initialData 
+      ? new Date(initialData.timestamp).toISOString().slice(0, 16) 
+      : new Date().toISOString().slice(0, 16)
+  );
   
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
@@ -73,7 +78,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
 
     setImages(prev => [...prev, ...newCompressedImages]);
     
-    // Clear inputs to allow re-selection of same file if needed
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (libraryInputRef.current) libraryInputRef.current.value = '';
   };
@@ -164,7 +168,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
       return;
     }
     const newEntry: HiveEntry = {
-      id: crypto.randomUUID(),
+      id: initialData?.id ?? crypto.randomUUID(),
       timestamp: new Date(timestamp).toISOString(),
       severity,
       location: selectedLocations,
@@ -173,27 +177,45 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
       images: images.length > 0 ? images : undefined
     };
     onAdd(newEntry);
-    setTriggers('');
-    setNotes('');
-    setImages([]);
-    setSelectedLocations([]);
+    if (!initialData) {
+      setTriggers('');
+      setNotes('');
+      setImages([]);
+      setSelectedLocations([]);
+    }
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 lg:p-8 landscape-compact-p">
-      <h2 className="text-xl font-bold text-slate-800 mb-4 md:mb-6 flex items-center landscape-compact-m">
-        <span className="bg-rose-100 text-rose-600 p-2 rounded-lg mr-3 landscape-hide">
-          <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-          </svg>
-        </span>
-        Log New Breakout
-      </h2>
+    <div className={`bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 lg:p-8 landscape-compact-p ${initialData ? 'border-amber-200' : ''}`}>
+      <div className="flex items-center justify-between mb-4 md:mb-6 landscape-compact-m">
+        <h2 className="text-xl font-bold text-slate-800 flex items-center">
+          <span className={`${initialData ? 'bg-amber-100 text-amber-600' : 'bg-rose-100 text-rose-600'} p-2 rounded-lg mr-3 landscape-hide`}>
+            {initialData ? (
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+            )}
+          </span>
+          {initialData ? 'Edit Breakout Entry' : 'Log New Breakout'}
+        </h2>
+        {onCancel && (
+          <button 
+            type="button" 
+            onClick={onCancel}
+            className="text-slate-400 hover:text-slate-600 p-2"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        )}
+      </div>
       
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-4">
-            {/* Top Row: Date & Photos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Date & Time</label>
@@ -209,30 +231,25 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
                 <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Add Photos</label>
                 <div className="flex flex-col space-y-2">
                   <div className="flex items-center space-x-2">
-                    {/* Camera Button */}
                     <button
                       type="button"
                       onClick={() => cameraInputRef.current?.click()}
                       className="flex-1 bg-slate-900 text-white p-2 rounded-xl border border-slate-800 transition-all flex items-center justify-center space-x-2 hover:bg-slate-800 active:scale-95"
-                      title="Take Photo"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                       <span className="text-[10px] font-bold uppercase tracking-wider">Camera</span>
                     </button>
                     
-                    {/* Gallery Button */}
                     <button
                       type="button"
                       onClick={() => libraryInputRef.current?.click()}
                       className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl border border-slate-200 transition-all flex items-center justify-center space-x-2 active:scale-95"
-                      title="Upload from Gallery"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h14a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                       <span className="text-[10px] font-bold uppercase tracking-wider">Gallery</span>
                     </button>
                   </div>
 
-                  {/* Image Previews */}
                   <div className="flex flex-wrap gap-1.5">
                     {images.map((img, idx) => (
                       <div key={idx} className="relative group/img">
@@ -249,23 +266,8 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
                   </div>
                 </div>
 
-                {/* Hidden File Inputs */}
-                <input 
-                  type="file" 
-                  ref={cameraInputRef} 
-                  onChange={handleImageUpload} 
-                  accept="image/*" 
-                  capture="environment" 
-                  className="hidden" 
-                />
-                <input 
-                  type="file" 
-                  ref={libraryInputRef} 
-                  onChange={handleImageUpload} 
-                  accept="image/*" 
-                  multiple 
-                  className="hidden" 
-                />
+                <input type="file" ref={cameraInputRef} onChange={handleImageUpload} accept="image/*" capture="environment" className="hidden" />
+                <input type="file" ref={libraryInputRef} onChange={handleImageUpload} accept="image/*" multiple className="hidden" />
               </div>
             </div>
 
@@ -378,9 +380,9 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd }) => {
 
         <button
           type="submit"
-          className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 md:py-4 px-6 rounded-2xl transition-all shadow-lg shadow-rose-200 flex items-center justify-center space-x-2 active:scale-[0.98] landscape-compact-m"
+          className={`w-full ${initialData ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-200' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-200'} text-white font-bold py-3 md:py-4 px-6 rounded-2xl transition-all shadow-lg flex items-center justify-center space-x-2 active:scale-[0.98] landscape-compact-m`}
         >
-          <span className="text-sm md:text-base">Save Log Entry</span>
+          <span className="text-sm md:text-base">{initialData ? 'Update Entry' : 'Save Log Entry'}</span>
           <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
           </svg>

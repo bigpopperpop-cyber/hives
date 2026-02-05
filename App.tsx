@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import HiveForm from './components/HiveForm';
 import HistoryCharts from './components/HistoryCharts';
@@ -14,6 +13,7 @@ const App: React.FC = () => {
   const [entries, setEntries] = useState<HiveEntry[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('log');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [editingEntry, setEditingEntry] = useState<HiveEntry | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -35,6 +35,12 @@ const App: React.FC = () => {
     const updated = [entry, ...entries];
     saveToStorage(updated);
     setActiveTab('history');
+  };
+
+  const updateEntry = (updated: HiveEntry) => {
+    const updatedEntries = entries.map(e => e.id === updated.id ? updated : e);
+    saveToStorage(updatedEntries);
+    setEditingEntry(null);
   };
 
   const deleteEntry = (id: string) => {
@@ -251,12 +257,22 @@ const App: React.FC = () => {
                         <p className="text-slate-600 text-[11px] italic truncate">"{entry.triggers || 'None'}"</p>
                       </div>
 
-                      <button 
-                        onClick={() => deleteEntry(entry.id)}
-                        className="absolute bottom-3 right-3 text-slate-300 hover:text-rose-500 transition-colors sm:opacity-0 group-hover:opacity-100"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
+                      <div className="absolute bottom-3 right-3 flex items-center space-x-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => setEditingEntry(entry)}
+                          className="text-slate-300 hover:text-amber-500 transition-colors p-1"
+                          title="Edit"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                        <button 
+                          onClick={() => deleteEntry(entry.id)}
+                          className="text-slate-300 hover:text-rose-500 transition-colors p-1"
+                          title="Delete"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -269,6 +285,19 @@ const App: React.FC = () => {
           <SyncPage entries={entries} onImport={handleImport} onClear={handleClear} />
         )}
       </main>
+
+      {/* Edit Overlay */}
+      {editingEntry && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+            <HiveForm 
+              initialData={editingEntry} 
+              onAdd={updateEntry} 
+              onCancel={() => setEditingEntry(null)} 
+            />
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="no-print bg-white border-t border-slate-200 py-4 px-4 text-center mt-auto landscape-hide">
