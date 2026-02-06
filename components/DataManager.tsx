@@ -67,23 +67,23 @@ const DataManager: React.FC<DataManagerProps> = ({ entries, onImport, onClear })
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm mb-8 transition-colors">
       <div className="flex flex-col gap-6">
         <div>
-          <h3 className="text-lg font-bold text-slate-800">Data Management</h3>
-          <p className="text-sm text-slate-500">Export reports for doctors or backup your history locally.</p>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-white">Data Management</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Export reports for doctors or backup your history locally.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <button onClick={handleExportCSV} className="flex items-center justify-center space-x-2 bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95">
+          <button onClick={handleExportCSV} className="flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95">
             <span>Excel Export</span>
           </button>
-          <button onClick={handleExportJSON} className="flex items-center justify-center space-x-2 bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95">
+          <button onClick={handleExportJSON} className="flex items-center justify-center space-x-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95">
             <span>App Backup</span>
           </button>
-          <button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center space-x-2 bg-slate-100 text-slate-700 font-bold py-3 px-4 rounded-xl transition-all active:scale-95">
+          <button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 px-4 rounded-xl transition-all active:scale-95">
             <span>Import Logs</span>
           </button>
-          <button onClick={() => window.confirm("Clear all data?") && onClear()} className="flex items-center justify-center space-x-2 text-rose-500 hover:bg-rose-50 font-bold py-3 px-4 rounded-xl transition-all">
+          <button onClick={() => window.confirm("Clear all data?") && onClear()} className="flex items-center justify-center space-x-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 font-bold py-3 px-4 rounded-xl transition-all">
             <span>Clear Device</span>
           </button>
         </div>

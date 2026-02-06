@@ -50,8 +50,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
   }, []);
 
   const summarizePollen = (data: any): string => {
-    // Open-Meteo Pollen types: alder, birch, grass, mugwort, olive, ragweed
-    // Thresholds are simplified for summary
     const values = [
       data.birch_pollen || 0,
       data.grass_pollen || 0,
@@ -74,11 +72,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
     navigator.geolocation.getCurrentPosition(async (position) => {
       try {
         const { latitude, longitude } = position.coords;
-        
-        // 1. Fetch standard Weather
         const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code`;
-        
-        // 2. Fetch Air Quality / Pollen
         const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}&current=birch_pollen,grass_pollen,ragweed_pollen,alder_pollen`;
 
         const [wRes, aRes] = await Promise.all([fetch(weatherUrl), fetch(airQualityUrl)]);
@@ -126,16 +120,12 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
-
     const newCompressedImages: string[] = [];
-
     for (const file of files) {
       const compressed = await compressFile(file);
       newCompressedImages.push(compressed);
     }
-
     setImages(prev => [...prev, ...newCompressedImages]);
-    
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (libraryInputRef.current) libraryInputRef.current.value = '';
   };
@@ -238,10 +228,10 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
   };
 
   return (
-    <div className={`bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 lg:p-8 landscape-compact-p ${initialData ? 'border-amber-200' : ''}`}>
-      <div className="flex items-center justify-between mb-4 md:mb-6 landscape-compact-m">
-        <h2 className="text-xl font-bold text-slate-800 flex items-center">
-          <span className={`${initialData ? 'bg-amber-100 text-amber-600' : 'bg-rose-100 text-rose-600'} p-2 rounded-lg mr-3 landscape-hide`}>
+    <div className={`bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 md:p-6 lg:p-8 transition-colors ${initialData ? 'border-amber-200 dark:border-amber-900' : ''}`}>
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center">
+          <span className={`${initialData ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'} p-2 rounded-lg mr-3`}>
             {initialData ? (
               <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -255,7 +245,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
           {initialData ? 'Edit Breakout Entry' : 'Log New Breakout'}
         </h2>
         {onCancel && (
-          <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 p-2">
+          <button type="button" onClick={onCancel} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 p-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         )}
@@ -266,23 +256,23 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Date & Time</label>
+                <label className="block text-[10px] md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight mb-1">Date & Time</label>
                 <input
                   type="datetime-local"
                   value={timestamp}
                   onChange={(e) => setTimestamp(e.target.value)}
-                  className="w-full rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500 text-xs md:text-sm py-2 px-3"
+                  className="w-full rounded-xl border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-white focus:ring-rose-500 focus:border-rose-500 text-xs md:text-sm py-2 px-3"
                   required
                 />
               </div>
               <div>
-                <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Environment</label>
+                <label className="block text-[10px] md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight mb-1">Environment</label>
                 <button
                   type="button"
                   onClick={fetchWeather}
                   disabled={isFetchingWeather}
                   className={`w-full py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all ${
-                    weather ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-500'
+                    weather ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-900 text-indigo-700 dark:text-indigo-400' : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'
                   }`}
                 >
                   {isFetchingWeather ? (
@@ -298,7 +288,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
                       </div>
                       <div className="flex items-center justify-center space-x-1 mt-0.5">
                         <svg className="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z" /></svg>
-                        <span className="text-[9px] font-black uppercase text-emerald-600">Pollen: {weather.pollenLevel}</span>
+                        <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400">Pollen: {weather.pollenLevel}</span>
                       </div>
                     </div>
                   ) : (
@@ -313,12 +303,12 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                <div>
-                <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Add Photos</label>
+                <label className="block text-[10px] md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight mb-1">Add Photos</label>
                 <div className="flex items-center space-x-2">
                     <button
                       type="button"
                       onClick={() => cameraInputRef.current?.click()}
-                      className="flex-1 bg-slate-900 text-white p-2 rounded-xl border border-slate-800 transition-all flex items-center justify-center space-x-2 hover:bg-slate-800 active:scale-95"
+                      className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 p-2 rounded-xl border border-slate-800 dark:border-white transition-all flex items-center justify-center space-x-2 hover:bg-slate-800 dark:hover:bg-slate-100 active:scale-95"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                       <span className="text-[10px] font-bold uppercase">Camera</span>
@@ -326,7 +316,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
                     <button
                       type="button"
                       onClick={() => libraryInputRef.current?.click()}
-                      className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl border border-slate-200 transition-all flex items-center justify-center space-x-2 active:scale-95"
+                      className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 p-2 rounded-xl border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center space-x-2 active:scale-95"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h14a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                       <span className="text-[10px] font-bold uppercase">Gallery</span>
@@ -335,7 +325,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
                 <div className="flex flex-wrap gap-1.5 mt-2">
                     {images.map((img, idx) => (
                       <div key={idx} className="relative group/img">
-                        <img src={img} className="w-10 h-10 rounded-lg object-cover border border-rose-200" alt="Preview" />
+                        <img src={img} className="w-10 h-10 rounded-lg object-cover border border-rose-200 dark:border-rose-900" alt="Preview" />
                         <button type="button" onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 shadow-sm">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="4" /></svg>
                         </button>
@@ -345,16 +335,16 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
                </div>
             </div>
 
-            <div className="bg-slate-50 p-3 md:p-4 rounded-2xl border border-slate-100">
-              <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-2">
+            <div className="bg-slate-50 dark:bg-slate-950 p-3 md:p-4 rounded-2xl border border-slate-100 dark:border-slate-800 transition-colors">
+              <label className="block text-[10px] md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight mb-2">
                 Severity (Itchiness: {severity}/10)
               </label>
               <input
                 type="range" min="1" max="10" value={severity}
                 onChange={(e) => setSeverity(parseInt(e.target.value))}
-                className="w-full h-1.5 md:h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                className="w-full h-1.5 md:h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500"
               />
-              <div className="flex justify-between text-[8px] md:text-[10px] font-black text-slate-400 px-1 mt-2 uppercase tracking-widest">
+              <div className="flex justify-between text-[8px] md:text-[10px] font-black text-slate-400 dark:text-slate-500 px-1 mt-2 uppercase tracking-widest">
                 <span>Mild</span>
                 <span>Moderate</span>
                 <span>Intense</span>
@@ -362,13 +352,13 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
             </div>
 
             <div>
-              <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Notes</label>
+              <label className="block text-[10px] md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight mb-1">Notes</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Symptoms or contexts?"
                 rows={2}
-                className="w-full rounded-xl border-slate-200 focus:ring-rose-500 focus:border-rose-500 text-xs md:text-sm px-3 py-2"
+                className="w-full rounded-xl border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-white focus:ring-rose-500 focus:border-rose-500 text-xs md:text-sm px-3 py-2"
               />
             </div>
           </div>
@@ -376,8 +366,8 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight">Areas</label>
-                <button type="button" onClick={() => setIsEditingAreas(!isEditingAreas)} className="text-[9px] md:text-[10px] font-black text-rose-500 uppercase tracking-wider">
+                <label className="text-[10px] md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Areas</label>
+                <button type="button" onClick={() => setIsEditingAreas(!isEditingAreas)} className="text-[9px] md:text-[10px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-wider">
                   {isEditingAreas ? 'Done' : 'Edit List'}
                 </button>
               </div>
@@ -386,9 +376,9 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
                 <div className="mb-3 animate-in slide-in-from-top-2 duration-200 flex space-x-2">
                   <input
                     type="text" value={newAreaInput} onChange={(e) => setNewAreaInput(e.target.value)}
-                    placeholder="e.g. Ear" className="flex-grow rounded-xl border-slate-200 text-xs px-3 py-1.5"
+                    placeholder="e.g. Ear" className="flex-grow rounded-xl border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-white text-xs px-3 py-1.5"
                   />
-                  <button type="button" onClick={addNewArea} className="bg-slate-800 text-white px-3 rounded-xl text-[10px] font-bold">Add</button>
+                  <button type="button" onClick={addNewArea} className="bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 px-3 rounded-xl text-[10px] font-bold">Add</button>
                 </div>
               )}
 
@@ -400,13 +390,13 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
                       <button
                         type="button" onClick={() => toggleLocation(area)}
                         className={`w-full py-2 px-1 rounded-lg text-[9px] md:text-[11px] font-bold border transition-all ${
-                          isSelected ? 'bg-rose-500 border-rose-500 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-rose-300'
+                          isSelected ? 'bg-rose-500 border-rose-500 text-white shadow-sm' : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-rose-300 dark:hover:border-rose-900'
                         }`}
                       >
                         {area}
                       </button>
                       {isEditingAreas && (
-                        <button type="button" onClick={(e) => removeArea(e, area)} className="absolute -top-1 -right-1 bg-slate-900 text-white rounded-full p-0.5 shadow-sm">
+                        <button type="button" onClick={(e) => removeArea(e, area)} className="absolute -top-1 -right-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full p-0.5 shadow-sm">
                           <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="4" /></svg>
                         </button>
                       )}
@@ -418,8 +408,8 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight">Triggers</label>
-                <button type="button" onClick={() => setIsEditingSuggestions(!isEditingSuggestions)} className="text-[9px] md:text-[10px] font-black text-rose-500 uppercase tracking-wider">
+                <label className="text-[10px] md:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Triggers</label>
+                <button type="button" onClick={() => setIsEditingSuggestions(!isEditingSuggestions)} className="text-[9px] md:text-[10px] font-black text-rose-500 dark:text-rose-400 uppercase tracking-wider">
                   {isEditingSuggestions ? 'Done' : 'Edit List'}
                 </button>
               </div>
@@ -427,10 +417,10 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
               <div className="flex space-x-2 mb-2">
                 <input
                   type="text" value={triggers} onChange={(e) => setTriggers(e.target.value)}
-                  placeholder="Seafood, etc..." className="flex-grow rounded-xl border-slate-200 text-xs px-3 py-1.5"
+                  placeholder="Seafood, etc..." className="flex-grow rounded-xl border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-white text-xs px-3 py-1.5"
                 />
                 {triggers && (
-                  <button type="button" onClick={addNewSuggestion} className="bg-slate-100 text-slate-600 px-2 rounded-xl text-[9px] font-black uppercase border border-slate-200">
+                  <button type="button" onClick={addNewSuggestion} className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 rounded-xl text-[9px] font-black uppercase border border-slate-200 dark:border-slate-700">
                     +Shortcut
                   </button>
                 )}
@@ -438,10 +428,10 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
 
               <div className="flex flex-wrap gap-1 md:gap-1.5 max-h-[80px] md:max-h-none overflow-y-auto">
                 {suggestionList.map(chip => (
-                  <div key={chip} onClick={() => addTriggerToInput(chip)} className="group relative flex items-center bg-slate-100 text-slate-500 px-2 py-1 rounded-md hover:bg-rose-50 hover:text-rose-600 transition-all cursor-pointer border border-transparent">
+                  <div key={chip} onClick={() => addTriggerToInput(chip)} className="group relative flex items-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-md hover:bg-rose-50 dark:hover:bg-rose-900/30 hover:text-rose-600 dark:hover:text-rose-400 transition-all cursor-pointer border border-transparent">
                     <span className="text-[9px] md:text-[10px] font-bold">+ {chip}</span>
                     {isEditingSuggestions && (
-                      <button type="button" onClick={(e) => removeSuggestion(e, chip)} className="ml-1.5 bg-slate-200 text-slate-500 rounded-full p-0.5 hover:bg-rose-500 hover:text-white">
+                      <button type="button" onClick={(e) => removeSuggestion(e, chip)} className="ml-1.5 bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full p-0.5 hover:bg-rose-500 hover:text-white">
                         <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="4" /></svg>
                       </button>
                     )}
@@ -454,7 +444,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
 
         <button
           type="submit"
-          className={`w-full ${initialData ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-200' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-200'} text-white font-bold py-3 md:py-4 px-6 rounded-2xl transition-all shadow-lg flex items-center justify-center space-x-2 active:scale-[0.98] landscape-compact-m`}
+          className={`w-full ${initialData ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-200 dark:shadow-none' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-200 dark:shadow-none'} text-white font-bold py-3 md:py-4 px-6 rounded-2xl transition-all shadow-lg flex items-center justify-center space-x-2 active:scale-[0.98]`}
         >
           <span className="text-sm md:text-base">{initialData ? 'Update Entry' : 'Save Log Entry'}</span>
           <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
