@@ -154,13 +154,36 @@ const App: React.FC = () => {
 
         {activeTab === 'history' && (
           <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Your Insights</h2>
-              <button onClick={generatePDF} className="bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg text-sm">Export Report</button>
+            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-200 dark:border-slate-800 transition-colors shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex-1">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Clinical Report</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-xl">
+                  Generate a professional PDF summary of your breakout history, severity trends, and environmental correlations. This document is formatted specifically to help your Dermatologist or GP during your next appointment.
+                </p>
+              </div>
+              <div className="shrink-0">
+                <button 
+                  onClick={generatePDF} 
+                  className="w-full md:w-auto flex items-center justify-center space-x-2 bg-rose-500 hover:bg-rose-600 text-white font-bold py-3.5 px-8 rounded-2xl shadow-lg shadow-rose-200 dark:shadow-none transition-all active:scale-95 group"
+                >
+                  <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Generate PDF Report</span>
+                </button>
+              </div>
             </div>
+
             <AnalysisPanel entries={entries} onAnalysisDone={setAnalysisResult} />
             <HistoryCharts entries={entries} />
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+            
+            <div className="flex items-center space-x-3 mt-12 mb-4">
+              <div className="h-px bg-slate-200 dark:bg-slate-800 flex-grow"></div>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600">Individual Logs</h3>
+              <div className="h-px bg-slate-200 dark:bg-slate-800 flex-grow"></div>
+            </div>
+
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {entries.map(entry => (
                 <div key={entry.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 hover:shadow-md transition-shadow group relative">
                   <div className="flex justify-between items-start mb-2">
