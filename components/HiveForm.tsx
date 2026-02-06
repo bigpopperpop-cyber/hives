@@ -66,7 +66,8 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    // Explicitly cast to File[] to fix unknown type error when iterating files
+    const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
 
     const newCompressedImages: string[] = [];

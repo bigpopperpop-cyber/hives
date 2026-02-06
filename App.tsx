@@ -3,11 +3,12 @@ import HiveForm from './components/HiveForm';
 import HistoryCharts from './components/HistoryCharts';
 import AnalysisPanel from './components/AnalysisPanel';
 import SyncPage from './components/SyncPage';
+import AboutPage from './components/AboutPage';
 import DoctorReport from './components/DoctorReport';
 import { HiveEntry, AnalysisResult } from './types';
 import { STORAGE_KEY } from './constants';
 
-type Tab = 'log' | 'history' | 'sync';
+type Tab = 'log' | 'history' | 'sync' | 'about';
 
 const App: React.FC = () => {
   const [entries, setEntries] = useState<HiveEntry[]>([]);
@@ -91,24 +92,30 @@ const App: React.FC = () => {
             </div>
           </div>
           
-          <nav className="hidden md:flex items-center space-x-2">
+          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
             <button 
               onClick={() => setActiveTab('log')}
-              className={`text-xs md:text-sm font-semibold px-3 py-1.5 md:px-4 md:py-2 rounded-lg transition-all ${activeTab === 'log' ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+              className={`text-xs md:text-sm font-semibold px-2 py-1.5 lg:px-4 lg:py-2 rounded-lg transition-all ${activeTab === 'log' ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
             >
               Log Entry
             </button>
             <button 
               onClick={() => setActiveTab('history')}
-              className={`text-xs md:text-sm font-semibold px-3 py-1.5 md:px-4 md:py-2 rounded-lg transition-all ${activeTab === 'history' ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+              className={`text-xs md:text-sm font-semibold px-2 py-1.5 lg:px-4 lg:py-2 rounded-lg transition-all ${activeTab === 'history' ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
             >
               History
             </button>
             <button 
               onClick={() => setActiveTab('sync')}
-              className={`text-xs md:text-sm font-semibold px-3 py-1.5 md:px-4 md:py-2 rounded-lg transition-all ${activeTab === 'sync' ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+              className={`text-xs md:text-sm font-semibold px-2 py-1.5 lg:px-4 lg:py-2 rounded-lg transition-all ${activeTab === 'sync' ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
             >
               Sync
+            </button>
+            <button 
+              onClick={() => setActiveTab('about')}
+              className={`text-xs md:text-sm font-semibold px-2 py-1.5 lg:px-4 lg:py-2 rounded-lg transition-all ${activeTab === 'about' ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+            >
+              About
             </button>
           </nav>
 
@@ -124,22 +131,29 @@ const App: React.FC = () => {
           onClick={() => setActiveTab('log')}
           className={`flex flex-col items-center space-y-0.5 ${activeTab === 'log' ? 'text-rose-500' : 'text-slate-400'}`}
         >
-          <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
-          <span className="text-[8px] md:text-[10px] font-bold uppercase">Log</span>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+          <span className="text-[8px] font-bold uppercase">Log</span>
         </button>
         <button 
           onClick={() => setActiveTab('history')}
           className={`flex flex-col items-center space-y-0.5 ${activeTab === 'history' ? 'text-rose-500' : 'text-slate-400'}`}
         >
-          <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-          <span className="text-[8px] md:text-[10px] font-bold uppercase">Stats</span>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          <span className="text-[8px] font-bold uppercase">Stats</span>
         </button>
         <button 
           onClick={() => setActiveTab('sync')}
           className={`flex flex-col items-center space-y-0.5 ${activeTab === 'sync' ? 'text-rose-500' : 'text-slate-400'}`}
         >
-          <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-          <span className="text-[8px] md:text-[10px] font-bold uppercase">Sync</span>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+          <span className="text-[8px] font-bold uppercase">Sync</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab('about')}
+          className={`flex flex-col items-center space-y-0.5 ${activeTab === 'about' ? 'text-rose-500' : 'text-slate-400'}`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <span className="text-[8px] font-bold uppercase">About</span>
         </button>
       </div>
 
@@ -283,6 +297,10 @@ const App: React.FC = () => {
 
         {activeTab === 'sync' && (
           <SyncPage entries={entries} onImport={handleImport} onClear={handleClear} />
+        )}
+
+        {activeTab === 'about' && (
+          <AboutPage />
         )}
       </main>
 
