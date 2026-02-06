@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BodyArea, HiveEntry } from '../types';
+import { BodyArea, HiveEntry, WeatherData } from '../types';
 import { DEFAULT_BODY_AREAS, DEFAULT_COMMON_TRIGGERS, CUSTOM_TRIGGERS_KEY, CUSTOM_BODY_AREAS_KEY } from '../constants';
 
 interface HiveFormProps {
@@ -14,6 +14,8 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
   const [triggers, setTriggers] = useState(initialData?.triggers ?? '');
   const [notes, setNotes] = useState(initialData?.notes ?? '');
   const [images, setImages] = useState<string[]>(initialData?.images ?? []);
+  const [weather, setWeather] = useState<WeatherData | undefined>(initialData?.weather);
+  const [isFetchingWeather, setIsFetchingWeather] = useState(false);
   const [timestamp, setTimestamp] = useState(
     initialData 
       ? new Date(initialData.timestamp).toISOString().slice(0, 16) 
@@ -47,6 +49,39 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
     }
   }, []);
 
+  const fetchWeather = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setIsFetchingWeather(true);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+        // Fetch weather data from Open-Meteo (Free, no API key required)
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code`);
+        const data = await response.json();
+        
+        if (data.current) {
+          setWeather({
+            temp: data.current.temperature_2m,
+            humidity: data.current.relative_humidity_2m,
+            condition: `Code ${data.current.weather_code}`
+          });
+        }
+      } catch (err) {
+        console.error("Weather fetch failed", err);
+        alert("Failed to fetch weather data. Please try again.");
+      } finally {
+        setIsFetchingWeather(false);
+      }
+    }, (err) => {
+      setIsFetchingWeather(false);
+      alert("Please enable location permissions to fetch weather data.");
+    });
+  };
+
   const saveSuggestions = (newList: string[]) => {
     setSuggestionList(newList);
     localStorage.setItem(CUSTOM_TRIGGERS_KEY, JSON.stringify(newList));
@@ -66,7 +101,6 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Explicitly cast to File[] to fix unknown type error when iterating files
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
 
@@ -94,19 +128,11 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
           const MAX_HEIGHT = 500;
           let width = img.width;
           let height = img.height;
-
           if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
+            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
           } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
+            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
           }
-
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
@@ -175,7 +201,8 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
       location: selectedLocations,
       triggers,
       notes,
-      images: images.length > 0 ? images : undefined
+      images: images.length > 0 ? images : undefined,
+      weather
     };
     onAdd(newEntry);
     if (!initialData) {
@@ -183,6 +210,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
       setNotes('');
       setImages([]);
       setSelectedLocations([]);
+      setWeather(undefined);
     }
   };
 
@@ -204,11 +232,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
           {initialData ? 'Edit Breakout Entry' : 'Log New Breakout'}
         </h2>
         {onCancel && (
-          <button 
-            type="button" 
-            onClick={onCancel}
-            className="text-slate-400 hover:text-slate-600 p-2"
-          >
+          <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 p-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         )}
@@ -229,47 +253,67 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
                 />
               </div>
               <div>
+                <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Environment</label>
+                <button
+                  type="button"
+                  onClick={fetchWeather}
+                  disabled={isFetchingWeather}
+                  className={`w-full py-2 px-3 rounded-xl border flex items-center justify-center space-x-2 transition-all ${
+                    weather ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-500'
+                  }`}
+                >
+                  {isFetchingWeather ? (
+                    <svg className="animate-spin h-4 w-4 text-slate-400" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : weather ? (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+                      <span className="text-xs font-bold">{weather.temp}°C / {weather.humidity}%</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      <span className="text-xs">Fetch Weather</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+               <div>
                 <label className="block text-[10px] md:text-sm font-bold text-slate-500 uppercase tracking-tight mb-1">Add Photos</label>
-                <div className="flex flex-col space-y-2">
-                  <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2">
                     <button
                       type="button"
                       onClick={() => cameraInputRef.current?.click()}
                       className="flex-1 bg-slate-900 text-white p-2 rounded-xl border border-slate-800 transition-all flex items-center justify-center space-x-2 hover:bg-slate-800 active:scale-95"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Camera</span>
+                      <span className="text-[10px] font-bold uppercase">Camera</span>
                     </button>
-                    
                     <button
                       type="button"
                       onClick={() => libraryInputRef.current?.click()}
                       className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl border border-slate-200 transition-all flex items-center justify-center space-x-2 active:scale-95"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h14a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Gallery</span>
+                      <span className="text-[10px] font-bold uppercase">Gallery</span>
                     </button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5">
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
                     {images.map((img, idx) => (
                       <div key={idx} className="relative group/img">
                         <img src={img} className="w-10 h-10 rounded-lg object-cover border border-rose-200" alt="Preview" />
-                        <button 
-                          type="button" 
-                          onClick={() => removeImage(idx)} 
-                          className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 shadow-sm"
-                        >
+                        <button type="button" onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 bg-rose-500 text-white rounded-full p-0.5 shadow-sm">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="4" /></svg>
                         </button>
                       </div>
                     ))}
-                  </div>
                 </div>
-
-                <input type="file" ref={cameraInputRef} onChange={handleImageUpload} accept="image/*" capture="environment" className="hidden" />
-                <input type="file" ref={libraryInputRef} onChange={handleImageUpload} accept="image/*" multiple className="hidden" />
-              </div>
+               </div>
             </div>
 
             <div className="bg-slate-50 p-3 md:p-4 rounded-2xl border border-slate-100">
@@ -389,6 +433,9 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
           </svg>
         </button>
       </form>
+      
+      <input type="file" ref={cameraInputRef} onChange={handleImageUpload} accept="image/*" capture="environment" className="hidden" />
+      <input type="file" ref={libraryInputRef} onChange={handleImageUpload} accept="image/*" multiple className="hidden" />
     </div>
   );
 };

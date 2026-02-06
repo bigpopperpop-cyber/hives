@@ -2,6 +2,7 @@
   "name": "I Am Itchy",
   "description": "A comprehensive tracking and analysis tool for chronic hives (urticaria), featuring visual severity charts, body location heatmaps, and AI-powered trigger analysis.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "geolocation"
   ]
 }

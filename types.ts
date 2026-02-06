@@ -1,5 +1,11 @@
-
 export type BodyArea = string;
+
+export interface WeatherData {
+  temp: number;
+  humidity: number;
+  pollenLevel?: string;
+  condition?: string;
+}
 
 export interface HiveEntry {
   id: string;
@@ -9,6 +15,7 @@ export interface HiveEntry {
   triggers: string;
   notes?: string;
   images?: string[]; // Multiple Base64 optimized strings
+  weather?: WeatherData;
 }
 
 export interface AnalysisResult {
@@ -16,4 +23,5 @@ export interface AnalysisResult {
   severityTrend: string;
   potentialPatterns: string;
   advice: string;
+  environmentInsights?: string;
 }

@@ -1,13 +1,10 @@
-
 import { HiveEntry, AnalysisResult } from "../types";
 
 /**
  * Local Intelligence Engine
  * Analyzes hive data using advanced heuristic logic directly on the device.
- * No API key, internet, or cloud processing required.
  */
 export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisResult> => {
-  // Simulate a brief calculation period for aesthetic "crunching" feel
   await new Promise(resolve => setTimeout(resolve, 600));
 
   if (entries.length === 0) {
@@ -33,20 +30,41 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     .slice(0, 3)
     .map(([trigger]) => trigger.charAt(0).toUpperCase() + trigger.slice(1));
 
-  // 2. Severity Trend Calculation (Moving Average)
+  // 2. Severity Trend
   const sorted = [...entries].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   const mid = Math.floor(sorted.length / 2);
   const startAvg = sorted.slice(0, mid).reduce((acc, curr) => acc + curr.severity, 0) / (mid || 1);
   const endAvg = sorted.slice(mid).reduce((acc, curr) => acc + curr.severity, 0) / (sorted.length - mid || 1);
 
-  let severityTrend = "Your breakout intensity has remained relatively stable throughout your tracking history.";
+  let severityTrend = "Your breakout intensity has remained relatively stable.";
   if (endAvg > startAvg + 1.0) {
-    severityTrend = "We have detected an upward trend in recent severity. This suggests a potential cumulative effect or a new environmental trigger.";
+    severityTrend = "We have detected an upward trend in recent severity. Consider if new environmental factors are involved.";
   } else if (endAvg < startAvg - 1.0) {
-    severityTrend = "Great progress: Your most recent breakouts are significantly milder than your earlier logs.";
+    severityTrend = "Your most recent breakouts are significantly milder than your earlier logs.";
   }
 
-  // 3. Body Area / Trigger Correlation
+  // 3. Environmental Insights
+  let environmentInsights = "";
+  const weatherEntries = entries.filter(e => e.weather);
+  if (weatherEntries.length >= 3) {
+    const highHumidityEntries = weatherEntries.filter(e => e.weather!.humidity > 65);
+    const lowHumidityEntries = weatherEntries.filter(e => e.weather!.humidity <= 65);
+    
+    const highHumAvg = highHumidityEntries.reduce((acc, curr) => acc + curr.severity, 0) / (highHumidityEntries.length || 1);
+    const lowHumAvg = lowHumidityEntries.reduce((acc, curr) => acc + curr.severity, 0) / (lowHumidityEntries.length || 1);
+
+    if (highHumidityEntries.length > 0 && highHumAvg > lowHumAvg + 1.5) {
+      environmentInsights = "Climate Correlation: Your breakouts are significantly more severe during high humidity (>65%). Sweat may be a key trigger.";
+    }
+
+    const hotEntries = weatherEntries.filter(e => e.weather!.temp > 28);
+    const hotAvg = hotEntries.reduce((acc, curr) => acc + curr.severity, 0) / (hotEntries.length || 1);
+    if (hotEntries.length > 0 && hotAvg > endAvg + 1) {
+      environmentInsights = environmentInsights ? environmentInsights + " Also, heat exposure (>28°C) appears to intensify your symptoms." : "Heat Correlation: Breakouts are more intense in temperatures above 28°C.";
+    }
+  }
+
+  // 4. Pattern Correlation
   const correlations: Record<string, Record<string, number>> = {};
   entries.forEach(e => {
     e.location.forEach(loc => {
@@ -58,12 +76,10 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
     });
   });
 
-  let potentialPatterns = "Patterns are still emerging. As you add more logs, the engine will identify stronger correlations between your symptoms and triggers.";
-  
-  // Find strongest correlation
+  let potentialPatterns = "Patterns are still emerging. Keep logging areas and triggers to see correlations.";
+  let maxCount = 0;
   let strongestLoc = "";
   let strongestTrig = "";
-  let maxCount = 0;
 
   Object.entries(correlations).forEach(([loc, trigs]) => {
     Object.entries(trigs).forEach(([trig, count]) => {
@@ -76,22 +92,22 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
   });
 
   if (maxCount >= 2) {
-    potentialPatterns = `Significant Correlation: Breakouts on your ${strongestLoc} frequently occur after exposure to ${strongestTrig}. This pattern suggests a localized contact reaction.`;
+    potentialPatterns = `Localized Pattern: Breakouts on your ${strongestLoc} frequently occur after exposure to ${strongestTrig}.`;
   }
 
-  // 4. Dynamic Management Advice
-  let advice = "Continue tracking your breakouts daily. Consistent logging is the most effective tool for managing chronic urticaria.";
-  if (entries.length > 10) {
-    advice = "With 10+ entries logged, your report is now highly detailed. We recommend showing the 'Export PDF' report to your doctor at your next visit.";
-  }
-  if (endAvg > 7) {
-    advice = "Your recent severity levels are high. If antihistamines are not providing relief, discuss omalizumab or other specialty treatments with your physician.";
+  // 5. Advice
+  let advice = "Consistent logging is the most effective tool for managing chronic urticaria.";
+  if (environmentInsights) {
+    advice = "Environmental triggers detected. Discuss cooling strategies or dehumidification with your doctor.";
+  } else if (endAvg > 7) {
+    advice = "Your recent severity levels are high. Specialty treatments like omalizumab might be worth discussing with your physician.";
   }
 
   return {
     commonTriggers,
     severityTrend,
     potentialPatterns,
-    advice
+    advice,
+    environmentInsights: environmentInsights || undefined
   };
 };
