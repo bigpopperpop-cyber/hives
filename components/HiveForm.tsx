@@ -49,6 +49,21 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
     }
   }, []);
 
+  const summarizePollen = (data: any): string => {
+    // Open-Meteo Pollen types: alder, birch, grass, mugwort, olive, ragweed
+    // Thresholds are simplified for summary
+    const values = [
+      data.birch_pollen || 0,
+      data.grass_pollen || 0,
+      data.ragweed_pollen || 0,
+      data.alder_pollen || 0
+    ];
+    const maxVal = Math.max(...values);
+    if (maxVal > 50) return 'High';
+    if (maxVal > 10) return 'Moderate';
+    return 'Low';
+  };
+
   const fetchWeather = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
@@ -59,20 +74,28 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
     navigator.geolocation.getCurrentPosition(async (position) => {
       try {
         const { latitude, longitude } = position.coords;
-        // Fetch weather data from Open-Meteo (Free, no API key required)
-        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code`);
-        const data = await response.json();
         
-        if (data.current) {
+        // 1. Fetch standard Weather
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code`;
+        
+        // 2. Fetch Air Quality / Pollen
+        const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}&current=birch_pollen,grass_pollen,ragweed_pollen,alder_pollen`;
+
+        const [wRes, aRes] = await Promise.all([fetch(weatherUrl), fetch(airQualityUrl)]);
+        const wData = await wRes.json();
+        const aData = await aRes.json();
+        
+        if (wData.current) {
           setWeather({
-            temp: data.current.temperature_2m,
-            humidity: data.current.relative_humidity_2m,
-            condition: `Code ${data.current.weather_code}`
+            temp: wData.current.temperature_2m,
+            humidity: wData.current.relative_humidity_2m,
+            pollenLevel: aData.current ? summarizePollen(aData.current) : 'Unknown',
+            condition: `Code ${wData.current.weather_code}`
           });
         }
       } catch (err) {
-        console.error("Weather fetch failed", err);
-        alert("Failed to fetch weather data. Please try again.");
+        console.error("Environment fetch failed", err);
+        alert("Failed to fetch environment data. Please try again.");
       } finally {
         setIsFetchingWeather(false);
       }
@@ -258,7 +281,7 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
                   type="button"
                   onClick={fetchWeather}
                   disabled={isFetchingWeather}
-                  className={`w-full py-2 px-3 rounded-xl border flex items-center justify-center space-x-2 transition-all ${
+                  className={`w-full py-2 px-3 rounded-xl border flex flex-col items-center justify-center transition-all ${
                     weather ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-500'
                   }`}
                 >
@@ -268,15 +291,21 @@ const HiveForm: React.FC<HiveFormProps> = ({ onAdd, initialData, onCancel }) => 
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                   ) : weather ? (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
-                      <span className="text-xs font-bold">{weather.temp}°C / {weather.humidity}%</span>
-                    </>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center space-x-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+                        <span className="text-[10px] font-bold uppercase tracking-tight">{weather.temp}°C / {weather.humidity}%</span>
+                      </div>
+                      <div className="flex items-center justify-center space-x-1 mt-0.5">
+                        <svg className="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.143L11 21l-2.286-6.857L1 12l7.714-2.143L11 3z" /></svg>
+                        <span className="text-[9px] font-black uppercase text-emerald-600">Pollen: {weather.pollenLevel}</span>
+                      </div>
+                    </div>
                   ) : (
-                    <>
+                    <div className="flex items-center space-x-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                      <span className="text-xs">Fetch Weather</span>
-                    </>
+                      <span className="text-xs">Fetch Environment</span>
+                    </div>
                   )}
                 </button>
               </div>

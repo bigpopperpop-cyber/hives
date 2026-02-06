@@ -56,7 +56,7 @@ const DoctorReport: React.FC<DoctorReportProps> = ({ entries, analysis }) => {
                 </td>
                 <td className="p-2 border border-slate-200 font-bold text-center">{entry.severity}</td>
                 <td className="p-2 border border-slate-200 italic">
-                  {entry.weather ? `${entry.weather.temp}°C, ${entry.weather.humidity}% Hum.` : 'N/A'}
+                  {entry.weather ? `${entry.weather.temp}°C, ${entry.weather.humidity}% Hum. (Pollen: ${entry.weather.pollenLevel || 'N/A'})` : 'N/A'}
                 </td>
                 <td className="p-2 border border-slate-200">
                   <span className="font-bold">{entry.triggers}</span>

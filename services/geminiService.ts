@@ -47,9 +47,9 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
   let environmentInsights = "";
   const weatherEntries = entries.filter(e => e.weather);
   if (weatherEntries.length >= 3) {
+    // Humidity Analysis
     const highHumidityEntries = weatherEntries.filter(e => e.weather!.humidity > 65);
     const lowHumidityEntries = weatherEntries.filter(e => e.weather!.humidity <= 65);
-    
     const highHumAvg = highHumidityEntries.reduce((acc, curr) => acc + curr.severity, 0) / (highHumidityEntries.length || 1);
     const lowHumAvg = lowHumidityEntries.reduce((acc, curr) => acc + curr.severity, 0) / (lowHumidityEntries.length || 1);
 
@@ -57,10 +57,19 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
       environmentInsights = "Climate Correlation: Your breakouts are significantly more severe during high humidity (>65%). Sweat may be a key trigger.";
     }
 
+    // Heat Analysis
     const hotEntries = weatherEntries.filter(e => e.weather!.temp > 28);
     const hotAvg = hotEntries.reduce((acc, curr) => acc + curr.severity, 0) / (hotEntries.length || 1);
     if (hotEntries.length > 0 && hotAvg > endAvg + 1) {
       environmentInsights = environmentInsights ? environmentInsights + " Also, heat exposure (>28°C) appears to intensify your symptoms." : "Heat Correlation: Breakouts are more intense in temperatures above 28°C.";
+    }
+
+    // Pollen Analysis
+    const highPollenEntries = weatherEntries.filter(e => e.weather!.pollenLevel === 'High' || e.weather!.pollenLevel === 'Moderate');
+    const highPollenAvg = highPollenEntries.reduce((acc, curr) => acc + curr.severity, 0) / (highPollenEntries.length || 1);
+    if (highPollenEntries.length > 0 && highPollenAvg > endAvg + 1.5) {
+      const pollenNote = "Allergen Pattern: Elevated pollen levels correlate with higher itch severity. Seasonal triggers are likely.";
+      environmentInsights = environmentInsights ? environmentInsights + " " + pollenNote : pollenNote;
     }
   }
 
@@ -98,7 +107,7 @@ export const analyzeHiveData = async (entries: HiveEntry[]): Promise<AnalysisRes
   // 5. Advice
   let advice = "Consistent logging is the most effective tool for managing chronic urticaria.";
   if (environmentInsights) {
-    advice = "Environmental triggers detected. Discuss cooling strategies or dehumidification with your doctor.";
+    advice = "Environmental triggers detected. Discuss cooling strategies, dehumidification, or allergy blockers with your doctor.";
   } else if (endAvg > 7) {
     advice = "Your recent severity levels are high. Specialty treatments like omalizumab might be worth discussing with your physician.";
   }

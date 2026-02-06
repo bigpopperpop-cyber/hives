@@ -25,7 +25,7 @@ const DataManager: React.FC<DataManagerProps> = ({ entries, onImport, onClear })
       alert("No data to export.");
       return;
     }
-    const headers = ["Date", "Time", "Severity (1-10)", "Affected Areas", "Triggers", "Temp (C)", "Humidity (%)", "Notes"];
+    const headers = ["Date", "Time", "Severity (1-10)", "Affected Areas", "Triggers", "Temp (C)", "Humidity (%)", "Pollen Level", "Notes"];
     const rows = entries.map(entry => {
       const dateObj = new Date(entry.timestamp);
       const date = dateObj.toLocaleDateString();
@@ -34,8 +34,9 @@ const DataManager: React.FC<DataManagerProps> = ({ entries, onImport, onClear })
       const triggers = `"${(entry.triggers || '').replace(/"/g, '""')}"`;
       const temp = entry.weather?.temp ?? '-';
       const humidity = entry.weather?.humidity ?? '-';
+      const pollen = entry.weather?.pollenLevel ?? 'N/A';
       const notes = `"${(entry.notes || '').replace(/"/g, '""')}"`;
-      return [date, time, entry.severity, `"${areas}"`, triggers, temp, humidity, notes].join(',');
+      return [date, time, entry.severity, `"${areas}"`, triggers, temp, humidity, pollen, notes].join(',');
     });
     const csvContent = [headers.join(','), ...rows].join('\n');
     const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8;' });
